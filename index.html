@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-title" content="Wonder Write" />
   <meta name="theme-color" content="#FDFBF7" />
 
-  <title>Wonder Write — Writing Coach</title>
+  <title>Wonder Write — Lower Primary Writing Coach</title>
 
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -23,6 +23,10 @@
       user-select: none;
       -webkit-user-select: none;
     }
+    input, textarea {
+      user-select: text;
+      -webkit-user-select: text;
+    }
     html, body {
       font-family: 'Lexend', sans-serif;
       background-color: #FDFBF7;
@@ -33,25 +37,23 @@
       margin: 0;
       padding: 0;
     }
-    /* Safe area padding for full-screen iPad Home Screen Web Clips */
     .safe-area-container {
       padding-top: env(safe-area-inset-top, 0px);
       padding-bottom: env(safe-area-inset-bottom, 0px);
       padding-left: env(safe-area-inset-left, 0px);
       padding-right: env(safe-area-inset-right, 0px);
     }
-    /* Primary-friendly text sizing & line spacing */
     .kid-text {
-      font-size: clamp(1.4rem, 2.3vw, 1.85rem);
+      font-size: clamp(1.35rem, 2.2vw, 1.8rem);
       line-height: 1.65;
       color: #1E293B;
     }
     .kid-text-lg {
-      font-size: clamp(1.7rem, 2.8vw, 2.25rem);
+      font-size: clamp(1.65rem, 2.7vw, 2.2rem);
       line-height: 1.55;
       color: #1E293B;
     }
-    /* Word-by-word karaoke highlight */
+    /* Karaoke word highlight */
     .word-span {
       padding: 2px 6px;
       margin: 0 1px;
@@ -66,7 +68,7 @@
       transform: scale(1.08);
       box-shadow: 0 2px 6px rgba(0,0,0,0.12);
     }
-    /* Primary Paper Simulation */
+    /* Primary Paper Styling */
     .primary-paper {
       background-color: #ffffff;
       border: 2px solid #cbd5e1;
@@ -87,11 +89,10 @@
       );
       line-height: 40px;
       font-family: 'Comic Sans MS', 'Chalkboard SE', 'Lexend', cursive;
-      font-size: 1.45rem;
+      font-size: 1.4rem;
       color: #334155;
       padding: 6px 16px;
     }
-    /* Pulse animation for mic */
     @keyframes micPulse {
       0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.6); }
       50% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(244, 63, 94, 0); }
@@ -99,27 +100,53 @@
     .mic-recording {
       animation: micPulse 1.4s infinite;
     }
+
+    /* ================= PRINT / VISUAL PDF EXPORT STYLING ================= */
+    @media print {
+      @page {
+        size: A4 portrait;
+        margin: 12mm;
+      }
+      html, body {
+        background: #ffffff !important;
+        height: auto !important;
+        width: auto !important;
+        overflow: visible !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      #print-report-sheet {
+        display: block !important;
+        position: static !important;
+        width: 100% !important;
+        background: #ffffff !important;
+      }
+    }
   </style>
 </head>
 <body class="safe-area-container flex flex-col justify-between">
 
-  <!-- ================= KID TOP HEADER BAR ================= -->
-  <header class="bg-amber-50/95 border-b border-amber-200/80 px-6 py-3.5 flex items-center justify-between shrink-0">
-    <!-- Tap Avatar to switch student profile or edit name -->
-    <button onclick="cycleStudentPersona()" class="flex items-center gap-3.5 text-left active:scale-95 transition-transform">
+  <!-- ================= KID TOP HEADER BAR (NO-PRINT) ================= -->
+  <header class="no-print bg-amber-50/95 border-b border-amber-200/80 px-6 py-3 flex items-center justify-between shrink-0">
+    <!-- Active Student Badge (Tap to open 1:1 Student Picker) -->
+    <button onclick="openStudentPickerModal()" class="flex items-center gap-3.5 text-left active:scale-95 transition-transform">
       <div id="studentAvatar" class="w-14 h-14 rounded-2xl bg-emerald-100 border-2 border-emerald-400 flex items-center justify-center text-3xl shadow-sm">
         🦁
       </div>
       <div>
-        <h1 id="studentNameHeader" class="text-2xl font-bold text-slate-800">Leo's Writing Pad</h1>
+        <div class="flex items-center gap-2">
+          <h1 id="studentNameHeader" class="text-2xl font-bold text-slate-800">Select Your Name</h1>
+          <span id="demoModeBadge" class="hidden text-xs font-bold uppercase bg-amber-200 text-amber-950 px-2.5 py-0.5 rounded-full">Sample Demo</span>
+        </div>
         <div class="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
-          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-          <span>Tap icon to switch sample student</span>
+          <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span>Tap here to switch student</span>
         </div>
       </div>
     </button>
 
-    <!-- Interactive Progress Dots -->
+    <!-- Progress Dots -->
     <div id="progressDots" class="flex items-center gap-3.5">
       <button onclick="goToStep(1)" id="dot-1" class="w-5 h-5 rounded-full bg-emerald-500 transition-all"></button>
       <button onclick="goToStep(2)" id="dot-2" class="w-4 h-4 rounded-full bg-slate-300 transition-all"></button>
@@ -131,22 +158,20 @@
     <!-- Teacher Dashboard Button -->
     <button onclick="toggleTeacherView()" title="Teacher Dashboard" class="h-12 px-4 rounded-2xl bg-slate-200/80 hover:bg-slate-300 active:scale-95 flex items-center gap-2 text-slate-700 font-bold text-sm">
       <span>🔒</span>
-      <span class="hidden sm:inline">Teacher</span>
+      <span class="hidden sm:inline">Teacher Dashboard</span>
     </button>
   </header>
 
-  <!-- ================= MAIN FULLSCREEN VIEWPORT ================= -->
-  <main class="flex-1 overflow-y-auto p-6 sm:p-8 flex flex-col justify-between relative">
+  <!-- ================= MAIN STUDENT VIEWPORT (NO-PRINT) ================= -->
+  <main class="no-print flex-1 overflow-y-auto p-6 sm:p-8 flex flex-col justify-between relative">
 
     <!-- STEP 1: WELCOME & SNAP PHOTO -->
-    <section id="step-1" class="flex-1 flex flex-col items-center justify-center text-center max-w-3xl mx-auto gap-7">
+    <section id="step-1" class="flex-1 flex flex-col items-center justify-center text-center max-w-3xl mx-auto gap-6">
       <div class="w-32 h-32 rounded-full bg-amber-100 border-4 border-amber-300 flex items-center justify-center text-7xl shadow-md">
         🦉
       </div>
 
-      <div id="welcomeTextContainer" class="kid-text-lg font-semibold px-4">
-        <!-- Populated dynamically with karaoke words -->
-      </div>
+      <div id="welcomeTextContainer" class="kid-text-lg font-semibold px-4"></div>
 
       <button onclick="speakWelcome()" class="bg-sky-500 hover:bg-sky-600 text-white px-6 py-3.5 rounded-2xl font-bold flex items-center gap-3 shadow-md active:scale-95 text-xl">
         <span>🔊</span>
@@ -155,41 +180,33 @@
 
       <div class="flex flex-wrap items-center justify-center gap-6 mt-2">
         <!-- Opens Real iPad Camera Directly -->
-        <label class="min-w-[290px] min-h-[125px] bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-3xl shadow-xl flex flex-col items-center justify-center gap-2 px-8 py-5 cursor-pointer transition-all border-b-8 border-emerald-700">
+        <label class="min-w-[310px] min-h-[125px] bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-3xl shadow-xl flex flex-col items-center justify-center gap-2 px-8 py-5 cursor-pointer transition-all border-b-8 border-emerald-700">
           <span class="text-5xl">📷</span>
           <span class="text-2xl font-bold">Snap My Writing</span>
-          <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handleRealPhotoUpload(event, 1)" />
+          <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoCapture(event, 1)" />
         </label>
 
-        <!-- Use Pre-loaded Sample Paper for Quick Demo -->
-        <button onclick="snapDraft1()" class="min-w-[220px] min-h-[125px] bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-950 rounded-3xl shadow-md flex flex-col items-center justify-center gap-2 px-6 py-5 transition-all border-b-4 border-amber-300">
+        <!-- Only visible when Teacher activates a Sample Student Demo -->
+        <button id="demoStep1Btn" onclick="goToStep(2)" class="hidden min-w-[230px] min-h-[125px] bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-950 rounded-3xl shadow-md flex-col items-center justify-center gap-2 px-6 py-5 transition-all border-b-4 border-amber-300">
           <span class="text-4xl">✨</span>
-          <span class="text-xl font-bold">Try Sample Paper</span>
+          <span class="text-xl font-bold">Use Sample Paper</span>
         </button>
       </div>
     </section>
 
-    <!-- STEP 2: DRAFT 1 READ-BACK (VISION OCR + DRAWING RECOGNITION) -->
+    <!-- STEP 2: DRAFT 1 READ-BACK -->
     <section id="step-2" class="hidden flex-1 grid grid-cols-12 gap-8 items-center max-w-6xl mx-auto w-full">
-      <!-- Left: Student Paper (Drawing + Handwriting) -->
       <div class="col-span-12 lg:col-span-5 flex flex-col gap-3">
         <div class="primary-paper p-5">
           <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2 flex justify-between">
             <span>My Paper (Draft 1)</span>
-            <span id="visionBadge" class="bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full">🎨 Drawing Detected</span>
+            <span class="bg-amber-100 text-amber-800 px-2.5 py-0.5 rounded-full">📷 Captured</span>
           </div>
-          <!-- SVG Drawing or Captured Camera Image -->
-          <div id="draft1Drawing" class="w-full h-44 bg-sky-50 rounded-xl border border-slate-200 flex items-center justify-center mb-3 overflow-hidden">
-            <!-- Populated by persona or real camera photo -->
-          </div>
-          <!-- Handwritten Text Simulation -->
-          <div id="draft1RawHandwriting" class="handwriting-lines min-h-[120px]">
-            <!-- Populated by persona -->
-          </div>
+          <div id="draft1VisualBox" class="w-full h-44 bg-sky-50 rounded-xl border border-slate-200 flex items-center justify-center mb-3 overflow-hidden"></div>
+          <div id="draft1RawHandwriting" class="handwriting-lines min-h-[115px]" contenteditable="true" oninput="handleManualTextEdit(1, this.innerText)" title="Tap to edit transcription if needed"></div>
         </div>
       </div>
 
-      <!-- Right: What Owl Coach Read -->
       <div class="col-span-12 lg:col-span-7 flex flex-col justify-between h-full py-2">
         <div class="bg-white border-2 border-amber-200 rounded-3xl p-6 sm:p-8 shadow-sm">
           <div class="flex items-center justify-between mb-4">
@@ -203,20 +220,17 @@
             </button>
           </div>
 
-          <!-- Drawing recognition compliment -->
-          <p id="drawingCompliment" class="text-xl text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl px-5 py-3 mb-5 font-medium"></p>
+          <p id="drawingCompliment" class="text-xl text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl px-5 py-3 mb-4 font-medium"></p>
 
-          <!-- Decoded Text with Karaoke Highlighting -->
-          <div id="draft1DecodedContainer" class="kid-text bg-amber-50/70 p-6 rounded-2xl border border-amber-200/80 min-h-[140px]"></div>
+          <div id="draft1DecodedContainer" class="kid-text bg-amber-50/70 p-5 rounded-2xl border border-amber-200/80 min-h-[125px]"></div>
         </div>
 
-        <!-- Bottom Action Bar -->
-        <div class="flex items-center justify-between gap-5 mt-6">
-          <button onclick="goToStep(1)" class="min-h-[84px] px-7 bg-slate-200 hover:bg-slate-300 active:scale-95 text-slate-800 rounded-3xl font-bold text-xl flex items-center gap-3">
+        <div class="flex items-center justify-between gap-5 mt-5">
+          <button onclick="goToStep(1)" class="min-h-[82px] px-7 bg-slate-200 hover:bg-slate-300 active:scale-95 text-slate-800 rounded-3xl font-bold text-xl flex items-center gap-3">
             <span>🔄</span>
             <span>Retake</span>
           </button>
-          <button onclick="goToStep(3)" class="flex-1 min-h-[88px] bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-3xl font-bold text-2xl flex items-center justify-center gap-3 shadow-lg border-b-8 border-emerald-700">
+          <button onclick="goToStep(3)" class="flex-1 min-h-[86px] bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-3xl font-bold text-2xl flex items-center justify-center gap-3 shadow-lg border-b-8 border-emerald-700">
             <span>Talk with Owl Coach</span>
             <span>➡️</span>
           </button>
@@ -226,71 +240,62 @@
 
     <!-- STEP 3: SOCRATIC COACHING & ORAL REHEARSAL -->
     <section id="step-3" class="hidden flex-1 flex flex-col justify-between max-w-5xl mx-auto w-full">
-      <!-- Coach Question Card -->
-      <div class="bg-white border-4 border-sky-200 rounded-3xl p-6 sm:p-8 shadow-md flex items-start gap-5">
-        <div class="w-24 h-24 rounded-2xl bg-amber-100 border-2 border-amber-300 flex items-center justify-center text-6xl shrink-0">
+      <div class="bg-white border-4 border-sky-200 rounded-3xl p-6 sm:p-7 shadow-md flex items-start gap-5">
+        <div class="w-20 h-20 rounded-2xl bg-amber-100 border-2 border-amber-300 flex items-center justify-center text-5xl shrink-0">
           🦉
         </div>
         <div class="flex-1">
-          <div class="flex items-center justify-between mb-3">
-            <span id="activeRubricTag" class="text-sm font-bold uppercase tracking-wider bg-sky-100 text-sky-900 px-3.5 py-1.5 rounded-full">
-              Rubric Goal: Ending
-            </span>
+          <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+            <div class="flex items-center gap-2">
+              <span id="activeRubricTag" class="text-sm font-bold uppercase tracking-wider bg-sky-100 text-sky-900 px-3.5 py-1.5 rounded-full">
+                Rubric Goal
+              </span>
+              <button onclick="cycleActiveRubricQuestion()" class="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-full">
+                🔄 Next Rubric Goal
+              </button>
+            </div>
             <button onclick="speakCoachQuestion()" class="bg-sky-500 hover:bg-sky-600 active:scale-95 text-white px-5 py-2.5 rounded-2xl font-bold flex items-center gap-2 shadow text-lg">
               <span>🔊</span>
               <span>Listen Again</span>
             </button>
           </div>
-          <div id="coachQuestionContainer" class="kid-text font-semibold">
-            <!-- Karaoke words injected here -->
-          </div>
+          <div id="coachQuestionContainer" class="kid-text font-semibold"></div>
         </div>
       </div>
 
       <!-- Student Oral Rehearsal Input Area -->
-      <div class="bg-emerald-50/80 border-2 border-emerald-200 rounded-3xl p-6 my-4 flex flex-col items-center text-center">
+      <div class="bg-emerald-50/80 border-2 border-emerald-200 rounded-3xl p-6 my-3 flex flex-col items-center text-center">
         <p class="text-base font-bold text-emerald-900 uppercase tracking-wide mb-2">Say or Type Your Idea First:</p>
-        <div id="studentSpokenPreview" class="kid-text font-semibold bg-white w-full rounded-2xl p-5 border border-emerald-300 min-h-[86px] flex flex-wrap items-center justify-center text-slate-700">
+        <div id="studentSpokenPreview" class="kid-text font-semibold bg-white w-full rounded-2xl p-5 border border-emerald-300 min-h-[82px] flex flex-wrap items-center justify-center text-slate-700">
           Tap the green microphone and tell me your idea!
         </div>
 
-        <!-- Giant Multimodal Controls -->
-        <div class="flex flex-wrap items-center justify-center gap-4 mt-5 w-full">
-          <!-- Giant Tap to Speak Button -->
-          <button id="micButton" onclick="toggleStudentMic()" class="min-w-[250px] min-h-[86px] bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-3xl font-bold text-2xl px-7 py-4 flex items-center justify-center gap-3 shadow-lg border-b-8 border-emerald-700 transition-all">
+        <div class="flex flex-wrap items-center justify-center gap-4 mt-4 w-full">
+          <button id="micButton" onclick="toggleStudentMic()" class="min-w-[250px] min-h-[84px] bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-3xl font-bold text-2xl px-7 py-4 flex items-center justify-center gap-3 shadow-lg border-b-8 border-emerald-700 transition-all">
             <span class="text-3xl">🎤</span>
             <span id="micButtonLabel">Tap & Speak</span>
           </button>
 
-          <!-- Quick Sim Voice Button -->
-          <button onclick="fillSimulatedVoiceIdea()" class="min-h-[86px] bg-amber-200 hover:bg-amber-300 active:scale-95 text-amber-950 rounded-3xl font-bold text-xl px-6 py-4 flex items-center gap-2 border-b-4 border-amber-400">
-            <span>✨</span>
-            <span>Sample Voice Idea</span>
-          </button>
-
-          <!-- Toggle Keyboard Input -->
-          <button onclick="toggleKeyboardBox()" class="min-h-[86px] bg-slate-200 hover:bg-slate-300 active:scale-95 text-slate-800 rounded-3xl font-bold text-xl px-6 py-4 flex items-center gap-2 border-b-4 border-slate-400">
+          <button onclick="toggleKeyboardBox()" class="min-h-[84px] bg-slate-200 hover:bg-slate-300 active:scale-95 text-slate-800 rounded-3xl font-bold text-xl px-6 py-4 flex items-center gap-2 border-b-4 border-slate-400">
             <span>⌨️</span>
-            <span>Type</span>
+            <span>Type Idea</span>
           </button>
         </div>
 
-        <!-- Optional Simple Keyboard Input -->
         <div id="keyboardBox" class="hidden w-full mt-4">
           <input id="studentTypeInput" type="text" placeholder="Type your sentence here..." oninput="updateFromKeyboard(this.value)" class="w-full p-4 rounded-2xl border-2 border-slate-300 text-2xl font-semibold focus:outline-none focus:border-emerald-500" />
         </div>
       </div>
 
-      <!-- Next Step Button -->
       <div class="flex justify-end">
-        <button id="toPencilTimeBtn" onclick="goToStep(4)" class="w-full min-h-[84px] bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-3xl font-bold text-2xl flex items-center justify-center gap-3 shadow-lg border-b-8 border-indigo-800">
+        <button onclick="goToStep(4)" class="w-full min-h-[82px] bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-3xl font-bold text-2xl flex items-center justify-center gap-3 shadow-lg border-b-8 border-indigo-800">
           <span>✏️ Ready for Pencil Time!</span>
           <span>➡️</span>
         </button>
       </div>
     </section>
 
-    <!-- STEP 4: "PENCIL TIME" PAUSE (PHYSICAL PAPER REVISION WITH MEMORY REPLAY) -->
+    <!-- STEP 4: "PENCIL TIME" PAUSE -->
     <section id="step-4" class="hidden flex-1 flex flex-col items-center justify-between max-w-4xl mx-auto w-full text-center py-2">
       <div class="flex items-center gap-3 bg-amber-100 border-2 border-amber-300 px-7 py-3 rounded-full">
         <span class="text-4xl">✏️</span>
@@ -301,56 +306,48 @@
         Pick up your pencil and add your awesome idea to your paper. Tap the blue speaker anytime to hear your sentence again!
       </p>
 
-      <!-- Memory Bridge Card: Displays and replays the student's own spoken sentence -->
-      <div class="w-full bg-white border-4 border-emerald-400 rounded-3xl p-8 shadow-lg flex flex-col items-center gap-5">
+      <div class="w-full bg-white border-4 border-emerald-400 rounded-3xl p-7 shadow-lg flex flex-col items-center gap-5">
         <span class="text-sm font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-4 py-1.5 rounded-full">
           My New Sentence to Write:
         </span>
-        <div id="pencilTimeIdeaContainer" class="kid-text-lg font-bold text-slate-900 py-2">
-          <!-- Student's planned sentence with karaoke words -->
-        </div>
-        <button onclick="replayMyIdea()" class="min-w-[280px] min-h-[82px] bg-sky-500 hover:bg-sky-600 active:scale-95 text-white rounded-2xl font-bold text-2xl px-7 py-4 flex items-center justify-center gap-3 shadow-md border-b-4 border-sky-700">
+        <div id="pencilTimeIdeaContainer" class="kid-text-lg font-bold text-slate-900 py-2"></div>
+        <button onclick="replayMyIdea()" class="min-w-[280px] min-h-[80px] bg-sky-500 hover:bg-sky-600 active:scale-95 text-white rounded-2xl font-bold text-2xl px-7 py-4 flex items-center justify-center gap-3 shadow-md border-b-4 border-sky-700">
           <span>🔊</span>
           <span>Replay My Idea</span>
         </button>
       </div>
 
-      <!-- Snap Revised Paper Buttons -->
       <div class="flex items-center gap-4 w-full">
-        <button onclick="goToStep(3)" class="min-h-[88px] px-7 bg-slate-200 hover:bg-slate-300 active:scale-95 text-slate-800 rounded-3xl font-bold text-xl">
+        <button onclick="goToStep(3)" class="min-h-[86px] px-7 bg-slate-200 hover:bg-slate-300 active:scale-95 text-slate-800 rounded-3xl font-bold text-xl">
           ⬅️ Back
         </button>
 
-        <!-- Real Camera Capture for Draft 2 -->
-        <label class="flex-1 min-h-[90px] bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-3xl font-bold text-2xl flex items-center justify-center gap-3 shadow-xl border-b-8 border-emerald-700 cursor-pointer">
+        <label class="flex-1 min-h-[88px] bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-3xl font-bold text-2xl flex items-center justify-center gap-3 shadow-xl border-b-8 border-emerald-700 cursor-pointer">
           <span>📷</span>
           <span>I Wrote It! Snap My Paper</span>
-          <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handleRealPhotoUpload(event, 2)" />
+          <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handlePhotoCapture(event, 2)" />
         </label>
 
-        <!-- Quick Demo Bypass for Draft 2 -->
-        <button onclick="goToStep(5)" class="min-h-[90px] px-6 bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-950 rounded-3xl font-bold text-lg border-b-4 border-amber-300">
-          ✨ Demo Draft 2
+        <button id="demoStep4Btn" onclick="goToStep(5)" class="hidden min-h-[88px] px-6 bg-amber-100 hover:bg-amber-200 active:scale-95 text-amber-950 rounded-3xl font-bold text-lg border-b-4 border-amber-300">
+          ✨ Sample Draft 2
         </button>
       </div>
     </section>
 
-    <!-- STEP 5: DRAFT 2 COMPARISON & CELEBRATION -->
+    <!-- STEP 5: DRAFT 2 CELEBRATION -->
     <section id="step-5" class="hidden flex-1 flex flex-col justify-between max-w-6xl mx-auto w-full">
       <div class="grid grid-cols-12 gap-6 items-center flex-1">
-        <!-- Left: Revised Paper (Draft 2) -->
         <div class="col-span-12 lg:col-span-5">
           <div class="primary-paper p-5 border-emerald-400 border-4">
             <div class="text-xs font-bold uppercase tracking-wider text-emerald-700 mb-2 flex justify-between">
               <span>✨ My Updated Paper (Draft 2)</span>
-              <span class="bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">Added Detail!</span>
+              <span class="bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">Updated!</span>
             </div>
-            <div id="draft2Drawing" class="w-full h-40 bg-sky-50 rounded-xl border border-slate-200 flex items-center justify-center mb-3 overflow-hidden"></div>
-            <div id="draft2RawHandwriting" class="handwriting-lines min-h-[130px]"></div>
+            <div id="draft2VisualBox" class="w-full h-40 bg-sky-50 rounded-xl border border-slate-200 flex items-center justify-center mb-3 overflow-hidden"></div>
+            <div id="draft2RawHandwriting" class="handwriting-lines min-h-[125px]" contenteditable="true" oninput="handleManualTextEdit(2, this.innerText)"></div>
           </div>
         </div>
 
-        <!-- Right: Celebration & Growth Feedback -->
         <div class="col-span-12 lg:col-span-7 flex flex-col justify-between h-full py-2">
           <div class="bg-white border-4 border-amber-300 rounded-3xl p-6 sm:p-8 shadow-md relative">
             <div class="flex items-center justify-between mb-4">
@@ -369,7 +366,6 @@
 
             <div id="celebrationTextContainer" class="kid-text mb-5"></div>
 
-            <!-- Before vs After Highlight Box -->
             <div class="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-5">
               <div class="text-xs font-bold uppercase text-emerald-800 mb-1">Look how your story grew:</div>
               <p id="finalStoryDecoded" class="text-2xl font-semibold text-slate-800"></p>
@@ -377,110 +373,9 @@
           </div>
 
           <div class="flex items-center justify-between gap-4 mt-6">
-            <button onclick="goToStep(1)" class="flex-1 min-h-[84px] bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-3xl font-bold text-2xl flex items-center justify-center gap-3 shadow-lg border-b-8 border-emerald-700">
-              <span>🎉 Finish & Start New Story</span>
+            <button onclick="finishAndSaveSession()" class="flex-1 min-h-[84px] bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-3xl font-bold text-2xl flex items-center justify-center gap-3 shadow-lg border-b-8 border-emerald-700">
+              <span>🎉 Finish & Save</span>
             </button>
-            <button onclick="toggleTeacherView()" class="min-h-[84px] px-7 bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white rounded-3xl font-bold text-xl flex items-center gap-2 shadow-lg border-b-8 border-indigo-800">
-              <span>👩‍🏫 Teacher Data</span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ================= TEACHER DASHBOARD & DEMO SWITCHER OVERLAY ================= -->
-    <section id="teacher-view" class="hidden fixed inset-0 bg-slate-50 z-40 p-6 sm:p-8 overflow-y-auto flex flex-col justify-between">
-      <div class="max-w-6xl mx-auto w-full">
-        <!-- Top Teacher Header -->
-        <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200">
-          <div>
-            <span class="text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full">1:1 iPad Local Storage + Apple Intelligence</span>
-            <h2 class="text-2xl font-bold text-slate-900 mt-1">Teacher Writing Rubric & Growth Dashboard</h2>
-          </div>
-          <div class="flex flex-wrap items-center gap-3">
-            <!-- Sample Student Switcher inside Teacher Dashboard -->
-            <select id="simPersonaSelect" onchange="changePersona(this.value)" class="bg-white border-2 border-slate-300 rounded-xl px-3 py-2 text-slate-800 font-semibold text-sm">
-              <option value="leo">Sample: Leo (Age 6 — Missing Ending)</option>
-              <option value="maya">Sample: Maya (Age 7 — Describing Words)</option>
-              <option value="sam">Sample: Sam (Age 6 — Finger Spaces)</option>
-            </select>
-
-            <button onclick="exportSessionReport()" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm flex items-center gap-2 shadow">
-              <span>📡</span>
-              <span>AirDrop / Export Report</span>
-            </button>
-            <button onclick="toggleTeacherView()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl font-semibold text-sm">
-              ✕ Return to Student View
-            </button>
-          </div>
-        </div>
-
-        <!-- Active Class Rubric Controls -->
-        <div class="my-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-          <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">Active Lower Primary Writing Rubric Targets</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm">
-            <label class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50 font-semibold text-slate-700">
-              <input type="checkbox" checked class="w-5 h-5 accent-indigo-600" />
-              <span>1. Story Beginning / Middle / End</span>
-            </label>
-            <label class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50 font-semibold text-slate-700">
-              <input type="checkbox" checked class="w-5 h-5 accent-indigo-600" />
-              <span>2. Describing Words (Adjectives)</span>
-            </label>
-            <label class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50 font-semibold text-slate-700">
-              <input type="checkbox" checked class="w-5 h-5 accent-indigo-600" />
-              <span>3. Capital Letters & Finger Spaces</span>
-            </label>
-            <label class="flex items-center gap-2.5 p-3 rounded-xl border border-slate-200 bg-slate-50 font-semibold text-slate-700">
-              <input type="checkbox" checked class="w-5 h-5 accent-indigo-600" />
-              <span>4. Ignore Phonetic Spelling</span>
-            </label>
-          </div>
-        </div>
-
-        <!-- Student Evidence Comparison Grid -->
-        <div class="grid grid-cols-12 gap-5">
-          <!-- Draft 1 vs Draft 2 OCR & Photo Evidence -->
-          <div class="col-span-12 lg:col-span-7 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-4">
-            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500">Before & After Oral Rehearsal Evidence</h3>
-            
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div class="p-4 rounded-xl bg-slate-50 border border-slate-200">
-                <div class="text-xs font-bold text-slate-500 uppercase mb-1">Draft 1 (Raw OCR)</div>
-                <p id="teacherDraft1Raw" class="font-mono text-sm text-slate-700 mb-3"></p>
-                <div class="text-xs font-bold text-slate-500 uppercase mb-1">Decoded Intent</div>
-                <p id="teacherDraft1Decoded" class="text-base font-semibold text-slate-900"></p>
-              </div>
-
-              <div class="p-4 rounded-xl bg-emerald-50 border border-emerald-200">
-                <div class="text-xs font-bold text-emerald-700 uppercase mb-1">Draft 2 (After Coaching)</div>
-                <p id="teacherDraft2Raw" class="font-mono text-sm text-slate-700 mb-3"></p>
-                <div class="text-xs font-bold text-emerald-700 uppercase mb-1">Decoded Revision</div>
-                <p id="teacherDraft2Decoded" class="text-base font-semibold text-emerald-950"></p>
-              </div>
-            </div>
-
-            <!-- Coaching Transcript -->
-            <div class="p-4 rounded-xl bg-sky-50 border border-sky-200 text-sm">
-              <div class="text-xs font-bold text-sky-800 uppercase mb-1">Socratic Coaching & Oral Rehearsal Transcript</div>
-              <p id="teacherCoachPrompt" class="text-slate-700 mb-1.5"></p>
-              <p id="teacherStudentOral" class="font-semibold text-sky-950"></p>
-            </div>
-          </div>
-
-          <!-- AI Rubric Mastery Snapshot -->
-          <div class="col-span-12 lg:col-span-5 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-            <div>
-              <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">Apple Intelligence Rubric Snapshot</h3>
-              <div id="teacherRubricRows" class="space-y-3 text-sm">
-                <!-- Populated dynamically -->
-              </div>
-            </div>
-
-            <div class="mt-5 p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm text-amber-950">
-              <span class="font-bold uppercase block mb-1">AI Coach Instructional Note:</span>
-              <span id="teacherAiNote"></span>
-            </div>
           </div>
         </div>
       </div>
@@ -488,12 +383,278 @@
 
   </main>
 
-  <!-- ================= APPLICATION & NATIVE BRIDGE LOGIC ================= -->
+  <!-- ================= 1:1 STUDENT ROSTER PICKER MODAL (NO-PRINT) ================= -->
+  <div id="student-picker-modal" class="no-print hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+    <div class="bg-amber-50 border-4 border-amber-300 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl max-h-[88vh] flex flex-col justify-between">
+      <div class="flex items-center justify-between border-b border-amber-200 pb-4">
+        <div class="flex items-center gap-3">
+          <span class="text-4xl">👋</span>
+          <div>
+            <h2 class="text-2xl font-bold text-slate-900">Who is writing today?</h2>
+            <p class="text-sm text-slate-600 font-medium">Tap your name card (this iPad will remember you!)</p>
+          </div>
+        </div>
+        <button onclick="closeStudentPickerModal()" class="w-11 h-11 rounded-2xl bg-slate-200 hover:bg-slate-300 font-bold text-slate-700">✕</button>
+      </div>
+
+      <div id="studentPickerGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-4 my-6 overflow-y-auto pr-1">
+        <!-- Populated from Teacher's Classroom Roster -->
+      </div>
+
+      <div class="flex items-center justify-between pt-3 border-t border-amber-200 text-xs text-slate-500">
+        <span>Need to add students? Open 🔒 Teacher Dashboard</span>
+        <button onclick="closeStudentPickerModal(); toggleTeacherView();" class="font-bold text-indigo-700 underline">Edit Class List</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= TEACHER DASHBOARD OVERLAY (NO-PRINT) ================= -->
+  <section id="teacher-view" class="no-print hidden fixed inset-0 bg-slate-100 z-40 p-6 sm:p-8 overflow-y-auto">
+    <div class="max-w-6xl mx-auto w-full space-y-6 pb-12">
+
+      <!-- Top Teacher Header -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full">1:1 iPad Classroom Manager & Portfolio</span>
+          <h2 class="text-2xl font-bold text-slate-900 mt-1">Teacher Setup, Rubric & Student Growth Dashboard</h2>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <button onclick="printOrAirDropVisualPDF()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-5 py-3 rounded-xl font-bold text-sm flex items-center gap-2 shadow-md">
+            <span>📄</span>
+            <span>Export Visual PDF / AirDrop</span>
+          </button>
+          <button onclick="toggleTeacherView()" class="bg-slate-800 hover:bg-slate-900 text-white px-5 py-3 rounded-xl font-bold text-sm">
+            ✕ Back to Student View
+          </button>
+        </div>
+      </div>
+
+      <!-- SECTION A: CLASSROOM ROSTER & SAMPLE SANDBOX -->
+      <div class="grid grid-cols-12 gap-6">
+        <!-- Left: Editable Classroom Name List -->
+        <div class="col-span-12 lg:col-span-6 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500">1. Classroom Student Roster</h3>
+              <span id="rosterCountBadge" class="text-xs font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">0 Students</span>
+            </div>
+            <p class="text-xs text-slate-500 mb-3">Enter one student name per line. Students pick their name on their 1:1 iPad.</p>
+            <textarea id="teacherRosterTextarea" rows="5" placeholder="Oliver&#10;Charlotte&#10;Liam&#10;Amelia" class="w-full p-3.5 rounded-xl border border-slate-300 font-medium text-sm focus:outline-none focus:border-indigo-600"></textarea>
+          </div>
+          <div class="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-slate-100">
+            <span id="rosterSaveFeedback" class="text-xs font-semibold text-emerald-700">Saved locally on iPad</span>
+            <button onclick="saveClassroomRoster()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-xs shadow">
+              💾 Save Class List
+            </button>
+          </div>
+        </div>
+
+        <!-- Right: Custom Teacher Writing Rubric Builder -->
+        <div class="col-span-12 lg:col-span-6 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500">2. Custom Writing Rubric & Coaching Prompts</h3>
+              <button onclick="addNewRubricRow()" class="text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1 rounded-lg border border-indigo-200">
+                + Add Criterion
+              </button>
+            </div>
+            <p class="text-xs text-slate-500 mb-3">Check active criteria and customize the Socratic question Owl Coach asks students:</p>
+            <div id="teacherRubricBuilderList" class="space-y-2.5 max-h-[190px] overflow-y-auto pr-1">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+          <div class="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-slate-100">
+            <button onclick="resetDefaultRubric()" class="text-xs font-semibold text-slate-400 hover:text-slate-600">Reset Defaults</button>
+            <button onclick="saveCustomRubric()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-xs shadow">
+              💾 Save Rubric
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION B: STUDENT PORTFOLIO INSPECTOR + SAMPLE STUDENTS -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-4 pb-4 mb-5 border-b border-slate-200">
+          <div class="flex flex-wrap items-center gap-3">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500">3. Inspect Student Portfolio:</h3>
+            <select id="teacherPortfolioSelect" onchange="selectPortfolioSubject(this.value)" class="bg-slate-50 border-2 border-slate-300 rounded-xl px-4 py-2 text-slate-900 font-bold text-sm focus:outline-none focus:border-indigo-600">
+              <!-- Optgroups for Classroom Students & Built-in Sample Students -->
+            </select>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="launchSelectedInStudentView()" class="bg-amber-100 hover:bg-amber-200 text-amber-950 font-bold text-xs px-3.5 py-2.5 rounded-xl border border-amber-300">
+              ▶️ Open Selected in Student View
+            </button>
+            <button onclick="printOrAirDropVisualPDF()" class="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center gap-1.5">
+              <span>📡</span>
+              <span>Visual PDF Report (AirDrop / Print)</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Portfolio Evidence Comparison Grid -->
+        <div class="grid grid-cols-12 gap-5">
+          <!-- Draft 1 vs Draft 2 Visual & Text Evidence -->
+          <div class="col-span-12 lg:col-span-7 flex flex-col gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <!-- Draft 1 Card -->
+              <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
+                <div>
+                  <div class="text-xs font-bold text-slate-500 uppercase mb-2">Draft 1 (Initial Upload)</div>
+                  <div id="teacherDraft1Visual" class="w-full h-32 bg-white rounded-xl border border-slate-200 flex items-center justify-center mb-3 overflow-hidden"></div>
+                  <div class="text-xs font-bold text-slate-400 uppercase">Raw OCR / Transcription</div>
+                  <p id="teacherDraft1Raw" class="font-mono text-xs text-slate-700 mb-2"></p>
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-slate-500 uppercase">Decoded Story Intent</div>
+                  <p id="teacherDraft1Decoded" class="text-sm font-semibold text-slate-900"></p>
+                </div>
+              </div>
+
+              <!-- Draft 2 Card -->
+              <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 flex flex-col justify-between">
+                <div>
+                  <div class="text-xs font-bold text-emerald-800 uppercase mb-2">Draft 2 (After Oral Rehearsal)</div>
+                  <div id="teacherDraft2Visual" class="w-full h-32 bg-white rounded-xl border border-emerald-200 flex items-center justify-center mb-3 overflow-hidden"></div>
+                  <div class="text-xs font-bold text-emerald-700 uppercase">Revised OCR / Transcription</div>
+                  <p id="teacherDraft2Raw" class="font-mono text-xs text-slate-700 mb-2"></p>
+                </div>
+                <div>
+                  <div class="text-xs font-bold text-emerald-800 uppercase">Decoded Revision</div>
+                  <p id="teacherDraft2Decoded" class="text-sm font-semibold text-emerald-950"></p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Oral Rehearsal Transcript -->
+            <div class="p-4 rounded-2xl bg-sky-50 border border-sky-200 text-sm">
+              <div class="text-xs font-bold text-sky-800 uppercase mb-1">Socratic Coaching & Oral Rehearsal Log</div>
+              <p id="teacherCoachPrompt" class="text-slate-700 mb-1"></p>
+              <p id="teacherStudentOral" class="font-bold text-sky-950"></p>
+            </div>
+          </div>
+
+          <!-- Rubric Mastery Evaluation (Interactive for Teacher Override) -->
+          <div class="col-span-12 lg:col-span-5 flex flex-col justify-between bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <div>
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500">Rubric Mastery Snapshot</h4>
+                <span class="text-[11px] text-slate-400">Tap status pill to adjust</span>
+              </div>
+              <div id="teacherRubricRows" class="space-y-2.5 text-sm"></div>
+            </div>
+
+            <div class="mt-4">
+              <label class="text-xs font-bold uppercase text-amber-900 block mb-1">Teacher / AI Instructional Note:</label>
+              <textarea id="teacherAiNoteInput" rows="3" oninput="updateCurrentSubjectNote(this.value)" class="w-full p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-950 font-medium focus:outline-none"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ================= PRINTABLE / AIRDROP 1-PAGE VISUAL PDF REPORT ================= -->
+  <section id="print-report-sheet" class="hidden p-8 bg-white text-slate-900">
+    <!-- Report Header -->
+    <div class="flex items-center justify-between border-b-2 border-slate-800 pb-4 mb-6">
+      <div class="flex items-center gap-3">
+        <div id="pdfStudentAvatar" class="w-14 h-14 rounded-2xl bg-emerald-100 border-2 border-emerald-500 flex items-center justify-center text-3xl">🦁</div>
+        <div>
+          <div class="text-xs font-bold uppercase tracking-wider text-slate-500">Wonder Write • Lower Primary Writing Portfolio</div>
+          <h1 id="pdfStudentName" class="text-2xl font-bold text-slate-900">Student Growth Report</h1>
+        </div>
+      </div>
+      <div class="text-right text-xs text-slate-600">
+        <div class="font-bold text-slate-900" id="pdfDateText"></div>
+        <div>1:1 iPad Oral Rehearsal & Revision Log</div>
+      </div>
+    </div>
+
+    <!-- Side-by-Side Draft 1 & Draft 2 Visual Evidence -->
+    <div class="grid grid-cols-2 gap-6 mb-6">
+      <div class="border-2 border-slate-300 rounded-2xl p-4">
+        <div class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Draft 1 — Initial Writing</div>
+        <div id="pdfDraft1Visual" class="w-full h-40 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-center mb-3 overflow-hidden"></div>
+        <div class="text-xs font-bold uppercase text-slate-400">Raw Transcription:</div>
+        <p id="pdfDraft1Raw" class="font-mono text-sm text-slate-700 mb-2"></p>
+        <div class="text-xs font-bold uppercase text-slate-500">Decoded Intent:</div>
+        <p id="pdfDraft1Decoded" class="text-base font-bold text-slate-900"></p>
+      </div>
+
+      <div class="border-2 border-emerald-500 rounded-2xl p-4 bg-emerald-50/20">
+        <div class="text-xs font-bold uppercase tracking-wider text-emerald-800 mb-2">Draft 2 — Revised Writing (After Coaching)</div>
+        <div id="pdfDraft2Visual" class="w-full h-40 bg-slate-50 rounded-xl border border-emerald-200 flex items-center justify-center mb-3 overflow-hidden"></div>
+        <div class="text-xs font-bold uppercase text-emerald-700">Revised Transcription:</div>
+        <p id="pdfDraft2Raw" class="font-mono text-sm text-slate-700 mb-2"></p>
+        <div class="text-xs font-bold uppercase text-emerald-800">Decoded Revision:</div>
+        <p id="pdfDraft2Decoded" class="text-base font-bold text-emerald-950"></p>
+      </div>
+    </div>
+
+    <!-- Socratic Coaching & Oral Rehearsal Box -->
+    <div class="border-2 border-sky-300 bg-sky-50/40 rounded-2xl p-4 mb-6">
+      <div class="text-xs font-bold uppercase tracking-wider text-sky-900 mb-1">Oral Rehearsal & Socratic Coaching Transcript</div>
+      <p id="pdfCoachPrompt" class="text-sm text-slate-800 mb-1"></p>
+      <p id="pdfStudentOral" class="text-base font-bold text-sky-950"></p>
+    </div>
+
+    <!-- Rubric Mastery Table & Instructional Summary -->
+    <div class="grid grid-cols-12 gap-6 items-start">
+      <div class="col-span-7 border border-slate-300 rounded-2xl p-4">
+        <div class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Writing Rubric Assessment</div>
+        <div id="pdfRubricTable" class="space-y-2 text-sm"></div>
+      </div>
+
+      <div class="col-span-5 border border-amber-300 bg-amber-50/50 rounded-2xl p-4">
+        <div class="text-xs font-bold uppercase tracking-wider text-amber-900 mb-2">Instructional Growth Summary</div>
+        <p id="pdfTeacherNote" class="text-sm text-slate-800 leading-relaxed"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= APPLICATION LOGIC ================= -->
   <script>
-    const PERSONA_KEYS = ['leo', 'maya', 'sam'];
-    const PERSONAS = {
-      leo: {
-        name: "Leo",
+    const AVATAR_POOL = ['🦁', '🐼', '🦖', '🦊', '🐨', '🐸', '🦄', '🐙', '🦋', '🐢', '🦉', '🐯'];
+
+    // Default Teacher Rubric (Saved to localStorage)
+    const DEFAULT_RUBRIC = [
+      {
+        id: 'r1',
+        active: true,
+        criterion: 'Story Beginning, Middle & End',
+        prompt: 'I love how you started your story! What fun thing happened at the very end?'
+      },
+      {
+        id: 'r2',
+        active: true,
+        criterion: 'Describing Words (Adjectives)',
+        prompt: 'Your story is so interesting! Can you add a describing word to tell me what it looked or felt like?'
+      },
+      {
+        id: 'r3',
+        active: true,
+        criterion: 'Capital Letters & Finger Spaces',
+        prompt: 'Your ideas are awesome! How can we use finger spaces and a capital letter so readers can see every word?'
+      },
+      {
+        id: 'r4',
+        active: true,
+        criterion: 'Phonetic / Invented Spelling',
+        prompt: 'You stretched out your sounds so well! Can you read your favorite sentence out loud to me?'
+      }
+    ];
+
+    // Default Classroom Roster (Teacher can overwrite in dashboard)
+    const DEFAULT_ROSTER = ['Oliver', 'Charlotte', 'Liam', 'Amelia', 'Noah', 'Mia'];
+
+    // 3 Pre-Built Sample Students (Live inside Teacher Dashboard for Demo/Testing)
+    const SAMPLE_PERSONAS = {
+      'sample:leo': {
+        isSample: true,
+        name: "Leo (Sample)",
         avatar: "🦁",
         drawingSvg: `
           <svg viewBox="0 0 300 110" class="w-full h-full">
@@ -509,22 +670,23 @@
         drawingCompliment: "🎨 I see your drawing of a sunny park and a brown dog!",
         draft1Raw: "I wnt to the prk wit my dg.",
         draft1Decoded: "I went to the park with my dog.",
-        rubricFocus: "Rubric Goal: Story Ending",
+        rubricFocus: "Story Beginning, Middle & End",
         coachQuestion: "I love your story about going to the park with your dog! What fun thing happened at the very end?",
-        simulatedVoiceIdea: "We chased a big red ball and went home for dinner.",
+        oralIdea: "We chased a big red ball and went home for dinner.",
         draft2Raw: "I wnt to the prk wit my dg. We chasd a big red bal and wnt hom.",
         draft2Decoded: "I went to the park with my dog. We chased a big red ball and went home.",
         celebrationText: "Amazing job, Leo! You talked through your ending and wrote a whole new sentence about chasing the big red ball!",
-        rubricScores: [
-          { criterion: "Story Beginning / Middle / End", status: "Meeting (After Coaching)", color: "bg-emerald-100 text-emerald-800" },
-          { criterion: "Describing Words (big, red)", status: "Meeting", color: "bg-emerald-100 text-emerald-800" },
-          { criterion: "Capitals & Finger Spaces", status: "Meeting", color: "bg-emerald-100 text-emerald-800" },
-          { criterion: "Phonetic Spelling (wnt, prk, chasd)", status: "Age-Appropriate", color: "bg-sky-100 text-sky-800" }
-        ],
-        teacherNote: "Leo decoded his own phonetic writing confidently. During oral rehearsal, he generated a complete ending sentence with two adjectives ('big red ball') and successfully transferred it to his physical paper."
+        rubricStatuses: {
+          'Story Beginning, Middle & End': 'Meeting',
+          'Describing Words (Adjectives)': 'Meeting',
+          'Capital Letters & Finger Spaces': 'Meeting',
+          'Phonetic / Invented Spelling': 'Meeting'
+        },
+        teacherNote: "Leo decoded his own phonetic writing confidently. During oral rehearsal, he generated a complete ending sentence with two adjectives ('big red ball') and transferred it to his physical paper."
       },
-      maya: {
-        name: "Maya",
+      'sample:maya': {
+        isSample: true,
+        name: "Maya (Sample)",
         avatar: "🐼",
         drawingSvg: `
           <svg viewBox="0 0 300 110" class="w-full h-full">
@@ -537,22 +699,23 @@
         drawingCompliment: "🎨 I see your drawing of a cozy cat sitting on a pink couch!",
         draft1Raw: "My cat sat on the mat. She ate fud.",
         draft1Decoded: "My cat sat on the mat. She ate food.",
-        rubricFocus: "Rubric Goal: Describing Words",
+        rubricFocus: "Describing Words (Adjectives)",
         coachQuestion: "Your cat sounds so sweet! Can you tell me what your cat looks or feels like using describing words?",
-        simulatedVoiceIdea: "My fluffy orange cat sat on the soft mat.",
+        oralIdea: "My fluffy orange cat sat on the soft mat.",
         draft2Raw: "My flufy ornj cat sat on the soft mat. She ate fud.",
         draft2Decoded: "My fluffy orange cat sat on the soft mat. She ate food.",
         celebrationText: "Wonderful revising, Maya! You added the describing words fluffy, orange, and soft so the reader can picture your cat!",
-        rubricScores: [
-          { criterion: "Story Beginning / Middle / End", status: "Developing", color: "bg-amber-100 text-amber-800" },
-          { criterion: "Describing Words (fluffy, orange, soft)", status: "Meeting (After Coaching)", color: "bg-emerald-100 text-emerald-800" },
-          { criterion: "Capitals & Finger Spaces", status: "Meeting", color: "bg-emerald-100 text-emerald-800" },
-          { criterion: "Phonetic Spelling (flufy, ornj, fud)", status: "Age-Appropriate", color: "bg-sky-100 text-sky-800" }
-        ],
+        rubricStatuses: {
+          'Story Beginning, Middle & End': 'Developing',
+          'Describing Words (Adjectives)': 'Meeting',
+          'Capital Letters & Finger Spaces': 'Meeting',
+          'Phonetic / Invented Spelling': 'Meeting'
+        },
         teacherNote: "Maya initially wrote simple kernel sentences. With one Socratic prompt, she orally rehearsed three adjectives ('fluffy orange', 'soft') and revised her first sentence on paper."
       },
-      sam: {
-        name: "Sam",
+      'sample:sam': {
+        isSample: true,
+        name: "Sam (Sample)",
         avatar: "🦖",
         drawingSvg: `
           <svg viewBox="0 0 300 110" class="w-full h-full">
@@ -564,29 +727,83 @@
         drawingCompliment: "🎨 Wow! I see a red rocket flying toward the bright moon!",
         draft1Raw: "myrokitflutothemun",
         draft1Decoded: "My rocket flew to the moon.",
-        rubricFocus: "Rubric Goal: Finger Spaces & Capitals",
+        rubricFocus: "Capital Letters & Finger Spaces",
         coachQuestion: "Your rocket story is so exciting! How can we use our finger spaces and a capital letter so readers can see every word clearly?",
-        simulatedVoiceIdea: "I will put a capital M and finger spaces between My rocket flew to the moon.",
+        oralIdea: "I will put a capital M and finger spaces between My rocket flew to the moon.",
         draft2Raw: "My rokit flu to the mun.",
         draft2Decoded: "My rocket flew to the moon.",
         celebrationText: "High five, Sam! Look how clear your words are now that you used a capital M and finger spaces between every word!",
-        rubricScores: [
-          { criterion: "Story Beginning / Middle / End", status: "Emerging", color: "bg-amber-100 text-amber-800" },
-          { criterion: "Describing Words", status: "Emerging", color: "bg-amber-100 text-amber-800" },
-          { criterion: "Capitals & Finger Spaces", status: "Meeting (After Coaching)", color: "bg-emerald-100 text-emerald-800" },
-          { criterion: "Phonetic Spelling (rokit, flu, mun)", status: "Age-Appropriate", color: "bg-sky-100 text-sky-800" }
-        ],
+        rubricStatuses: {
+          'Story Beginning, Middle & End': 'Emerging',
+          'Describing Words (Adjectives)': 'Emerging',
+          'Capital Letters & Finger Spaces': 'Meeting',
+          'Phonetic / Invented Spelling': 'Developing'
+        },
         teacherNote: "VisionKit + drawing context helped decode Sam's unspaced string ('myrokitflutothemun'). After coaching, Sam rewrote the sentence with clear finger spaces, a capital M, and a period."
       }
     };
 
-    let currentPersonaKey = 'leo';
+    // Persistent State in localStorage
+    let classRoster = JSON.parse(localStorage.getItem('ww_roster')) || DEFAULT_ROSTER;
+    let customRubric = JSON.parse(localStorage.getItem('ww_rubric')) || DEFAULT_RUBRIC;
+    let studentRecords = JSON.parse(localStorage.getItem('ww_records')) || {};
+    let activeStudentId = localStorage.getItem('ww_active_student') || `student:${classRoster[0]}`;
+    let inspectedSubjectId = activeStudentId;
+
     let currentStep = 1;
-    let studentIdeaText = PERSONAS.leo.simulatedVoiceIdea;
+    let currentRubricIdx = 0;
     let isRecording = false;
     let recognition = null;
 
-    // Global TTS & Karaoke Synchronization State
+    // Ensure every student in roster has a record object
+    function ensureStudentRecord(studentName, idx = 0) {
+      const id = `student:${studentName}`;
+      if (!studentRecords[id]) {
+        const activeCriteria = customRubric.filter(r => r.active);
+        const firstRubric = activeCriteria[0] || DEFAULT_RUBRIC[0];
+        const defaultStatuses = {};
+        customRubric.forEach(r => { defaultStatuses[r.criterion] = 'Developing'; });
+
+        studentRecords[id] = {
+          isSample: false,
+          name: studentName,
+          avatar: AVATAR_POOL[idx % AVATAR_POOL.length],
+          draft1Image: null,
+          draft2Image: null,
+          drawingSvg: `<div class="text-slate-400 text-sm font-semibold flex flex-col items-center gap-1"><span class="text-3xl">📷</span><span>Photo of ${studentName}'s Writing</span></div>`,
+          drawingCompliment: "🎨 I love looking at your illustration and handwriting!",
+          draft1Raw: "Tap here or snap a photo to read your story.",
+          draft1Decoded: "Snap a photo of your writing paper so we can read it together!",
+          rubricFocus: firstRubric.criterion,
+          coachQuestion: firstRubric.prompt,
+          oralIdea: "",
+          draft2Raw: "Snap your updated paper after Pencil Time!",
+          draft2Decoded: "Your revised story will appear here.",
+          celebrationText: `Awesome effort, ${studentName}! You practiced your idea out loud and added it to your paper!`,
+          rubricStatuses: defaultStatuses,
+          teacherNote: `${studentName} used oral rehearsal to plan a new detail aligned with the classroom rubric.`
+        };
+      }
+      return studentRecords[id];
+    }
+
+    function getSubjectRecord(subjectId) {
+      if (subjectId && subjectId.startsWith('sample:')) {
+        return SAMPLE_PERSONAS[subjectId];
+      }
+      const name = subjectId ? subjectId.replace('student:', '') : classRoster[0];
+      const idx = Math.max(0, classRoster.indexOf(name));
+      return ensureStudentRecord(name, idx);
+    }
+
+    function saveAllState() {
+      localStorage.setItem('ww_roster', JSON.stringify(classRoster));
+      localStorage.setItem('ww_rubric', JSON.stringify(customRubric));
+      localStorage.setItem('ww_records', JSON.stringify(studentRecords));
+      localStorage.setItem('ww_active_student', activeStudentId);
+    }
+
+    // ================= SYNCHRONIZED TTS + KARAOKE ENGINE =================
     let activeSpeechTimeouts = [];
     let currentUtterance = null;
     let preferredVoice = null;
@@ -629,7 +846,7 @@
     function renderKaraokeText(containerId, text) {
       const container = document.getElementById(containerId);
       if (!container) return [];
-      const tokens = tokenizeWithOffsets(text);
+      const tokens = tokenizeWithOffsets(text || "");
       container.innerHTML = tokens
         .map((t, idx) => `<span class="word-span" data-word-idx="${idx}" data-start="${t.start}" data-end="${t.end}">${t.word}</span>`)
         .join(' ');
@@ -637,8 +854,7 @@
     }
 
     function speakWithHighlight(containerId, rawText) {
-      if (!window.speechSynthesis) return;
-
+      if (!window.speechSynthesis || !rawText) return;
       window.speechSynthesis.cancel();
       clearSpeechTimers();
 
@@ -660,54 +876,38 @@
 
       const highlightSpanAt = (index) => {
         wordSpans.forEach(s => s.classList.remove('word-active'));
-        if (wordSpans[index]) {
-          wordSpans[index].classList.add('word-active');
-        }
+        if (wordSpans[index]) wordSpans[index].classList.add('word-active');
       };
 
       utterance.onboundary = (event) => {
         if (event.name && event.name !== 'word') return;
-
         nativeBoundaryDetected = true;
         activeSpeechTimeouts.forEach(t => clearTimeout(t));
         activeSpeechTimeouts = [];
 
         const charIdx = event.charIndex;
         let matchedIdx = tokens.findIndex(t => charIdx >= t.start && charIdx < t.end);
-        if (matchedIdx === -1) {
-          matchedIdx = tokens.findIndex(t => t.start >= charIdx);
-        }
-        if (matchedIdx !== -1) {
-          highlightSpanAt(matchedIdx);
-        }
+        if (matchedIdx === -1) matchedIdx = tokens.findIndex(t => t.start >= charIdx);
+        if (matchedIdx !== -1) highlightSpanAt(matchedIdx);
       };
 
       utterance.onstart = () => {
         const checkTimer = setTimeout(() => {
           if (nativeBoundaryDetected) return;
-
           let cumulativeDelay = 0;
           tokens.forEach((token, idx) => {
             const tId = setTimeout(() => {
-              if (!nativeBoundaryDetected) {
-                highlightSpanAt(idx);
-              }
+              if (!nativeBoundaryDetected) highlightSpanAt(idx);
             }, cumulativeDelay);
             activeSpeechTimeouts.push(tId);
 
             const stripped = token.word.replace(/[^a-zA-Z0-9]/g, '');
             let wordDuration = ((185 + stripped.length * 52) / speechRate);
-
-            if (/[.!?]$/.test(token.word)) {
-              wordDuration += 410;
-            } else if (/[,;:]$/.test(token.word)) {
-              wordDuration += 220;
-            }
-
+            if (/[.!?]$/.test(token.word)) wordDuration += 410;
+            else if (/[,;:]$/.test(token.word)) wordDuration += 220;
             cumulativeDelay += wordDuration;
           });
         }, 220);
-
         activeSpeechTimeouts.push(checkTimer);
       };
 
@@ -720,61 +920,77 @@
       activeSpeechTimeouts.push(startTimer);
     }
 
-    function loadPersonaUI() {
-      const p = PERSONAS[currentPersonaKey];
-      studentIdeaText = p.simulatedVoiceIdea;
+    // ================= STUDENT VIEW UI RENDERING =================
+    function loadActiveStudentIntoUI() {
+      const rec = getSubjectRecord(activeStudentId);
+      const activeCriteria = customRubric.filter(r => r.active);
+      if (!rec.isSample && activeCriteria.length > 0) {
+        const chosenRubric = activeCriteria[currentRubricIdx % activeCriteria.length];
+        rec.rubricFocus = chosenRubric.criterion;
+        rec.coachQuestion = chosenRubric.prompt;
+      }
 
-      document.getElementById('studentAvatar').textContent = p.avatar;
-      document.getElementById('studentNameHeader').textContent = `${p.name}'s Writing Pad`;
-      document.getElementById('simPersonaSelect').value = currentPersonaKey;
+      document.getElementById('studentAvatar').textContent = rec.avatar;
+      document.getElementById('studentNameHeader').textContent = `${rec.name.replace(' (Sample)', '')}'s Writing Pad`;
 
-      renderKaraokeText(
-        'welcomeTextContainer',
-        `Hi ${p.name}! Ready to take a picture of your writing paper?`
-      );
+      const demoBadge = document.getElementById('demoModeBadge');
+      const demoStep1Btn = document.getElementById('demoStep1Btn');
+      const demoStep4Btn = document.getElementById('demoStep4Btn');
 
-      document.getElementById('draft1Drawing').innerHTML = p.drawingSvg;
-      document.getElementById('draft1RawHandwriting').textContent = p.draft1Raw;
-      document.getElementById('drawingCompliment').textContent = p.drawingCompliment;
-      renderKaraokeText('draft1DecodedContainer', p.draft1Decoded);
+      if (rec.isSample) {
+        demoBadge.classList.remove('hidden');
+        demoStep1Btn.classList.remove('hidden');
+        demoStep1Btn.classList.add('flex');
+        demoStep4Btn.classList.remove('hidden');
+      } else {
+        demoBadge.classList.add('hidden');
+        demoStep1Btn.classList.add('hidden');
+        demoStep1Btn.classList.remove('flex');
+        demoStep4Btn.classList.add('hidden');
+      }
 
-      document.getElementById('activeRubricTag').textContent = p.rubricFocus;
-      renderKaraokeText('coachQuestionContainer', p.coachQuestion);
-      document.getElementById('studentSpokenPreview').textContent = "Tap the green microphone and tell me your idea!";
+      renderKaraokeText('welcomeTextContainer', `Hi ${rec.name.replace(' (Sample)', '')}! Ready to take a picture of your writing paper?`);
 
-      renderKaraokeText('pencilTimeIdeaContainer', studentIdeaText);
+      // Step 2
+      document.getElementById('draft1VisualBox').innerHTML = rec.draft1Image
+        ? `<img src="${rec.draft1Image}" class="w-full h-full object-contain" />`
+        : rec.drawingSvg;
+      document.getElementById('draft1RawHandwriting').textContent = rec.draft1Raw;
+      document.getElementById('drawingCompliment').textContent = rec.drawingCompliment;
+      renderKaraokeText('draft1DecodedContainer', rec.draft1Decoded);
 
-      document.getElementById('draft2Drawing').innerHTML = p.drawingSvg;
-      document.getElementById('draft2RawHandwriting').textContent = p.draft2Raw;
-      renderKaraokeText('celebrationTextContainer', p.celebrationText);
-      document.getElementById('finalStoryDecoded').textContent = p.draft2Decoded;
+      // Step 3
+      document.getElementById('activeRubricTag').textContent = `Rubric Goal: ${rec.rubricFocus}`;
+      renderKaraokeText('coachQuestionContainer', rec.coachQuestion);
+      if (rec.oralIdea) {
+        renderKaraokeText('studentSpokenPreview', rec.oralIdea);
+      } else {
+        document.getElementById('studentSpokenPreview').textContent = "Tap the green microphone and tell me your idea!";
+      }
 
-      document.getElementById('teacherDraft1Raw').textContent = `"${p.draft1Raw}"`;
-      document.getElementById('teacherDraft1Decoded').textContent = `"${p.draft1Decoded}"`;
-      document.getElementById('teacherDraft2Raw').textContent = `"${p.draft2Raw}"`;
-      document.getElementById('teacherDraft2Decoded').textContent = `"${p.draft2Decoded}"`;
-      document.getElementById('teacherCoachPrompt').innerHTML = `<strong>Coach:</strong> "${p.coachQuestion}"`;
-      document.getElementById('teacherStudentOral').innerHTML = `<strong>${p.name} (Oral Rehearsal):</strong> "${studentIdeaText}"`;
-      document.getElementById('teacherAiNote').textContent = p.teacherNote;
+      // Step 4
+      renderKaraokeText('pencilTimeIdeaContainer', rec.oralIdea || "Say your idea in Step 3 so you can replay it here!");
 
-      const rubricContainer = document.getElementById('teacherRubricRows');
-      rubricContainer.innerHTML = p.rubricScores.map(r => `
-        <div class="flex items-center justify-between p-3 rounded-xl border border-slate-100 bg-slate-50">
-          <span class="font-medium text-slate-700">${r.criterion}</span>
-          <span class="px-3 py-1 rounded-full text-xs font-bold ${r.color}">${r.status}</span>
-        </div>
-      `).join('');
+      // Step 5
+      document.getElementById('draft2VisualBox').innerHTML = rec.draft2Image
+        ? `<img src="${rec.draft2Image}" class="w-full h-full object-contain" />`
+        : rec.drawingSvg;
+      document.getElementById('draft2RawHandwriting').textContent = rec.draft2Raw;
+      renderKaraokeText('celebrationTextContainer', rec.celebrationText);
+      document.getElementById('finalStoryDecoded').textContent = rec.draft2Decoded;
     }
 
-    function cycleStudentPersona() {
-      const nextIdx = (PERSONA_KEYS.indexOf(currentPersonaKey) + 1) % PERSONA_KEYS.length;
-      changePersona(PERSONA_KEYS[nextIdx]);
-    }
-
-    function changePersona(key) {
-      currentPersonaKey = key;
-      loadPersonaUI();
-      goToStep(currentStep);
+    function cycleActiveRubricQuestion() {
+      const activeCriteria = customRubric.filter(r => r.active);
+      if (!activeCriteria.length) return;
+      currentRubricIdx = (currentRubricIdx + 1) % activeCriteria.length;
+      const rec = getSubjectRecord(activeStudentId);
+      const nextR = activeCriteria[currentRubricIdx];
+      rec.rubricFocus = nextR.criterion;
+      rec.coachQuestion = nextR.prompt;
+      document.getElementById('activeRubricTag').textContent = `Rubric Goal: ${rec.rubricFocus}`;
+      speakWithHighlight('coachQuestionContainer', rec.coachQuestion);
+      saveAllState();
     }
 
     function goToStep(stepNumber) {
@@ -791,82 +1007,109 @@
       }
       document.getElementById(`step-${stepNumber}`).classList.remove('hidden');
 
-      const p = PERSONAS[currentPersonaKey];
+      const rec = getSubjectRecord(activeStudentId);
       if (stepNumber === 1) {
-        speakWithHighlight('welcomeTextContainer', `Hi ${p.name}! Ready to take a picture of your writing paper?`);
+        speakWithHighlight('welcomeTextContainer', `Hi ${rec.name.replace(' (Sample)', '')}! Ready to take a picture of your writing paper?`);
       } else if (stepNumber === 2) {
-        speakWithHighlight('draft1DecodedContainer', p.draft1Decoded);
+        speakWithHighlight('draft1DecodedContainer', rec.draft1Decoded);
       } else if (stepNumber === 3) {
-        speakWithHighlight('coachQuestionContainer', p.coachQuestion);
+        speakWithHighlight('coachQuestionContainer', rec.coachQuestion);
       } else if (stepNumber === 4) {
-        speakWithHighlight('pencilTimeIdeaContainer', studentIdeaText);
+        const ideaToRead = rec.oralIdea || "Pick up your pencil and add your new sentence!";
+        speakWithHighlight('pencilTimeIdeaContainer', ideaToRead);
       } else if (stepNumber === 5) {
-        speakWithHighlight('celebrationTextContainer', p.celebrationText);
+        speakWithHighlight('celebrationTextContainer', rec.celebrationText);
       }
     }
 
     function speakWelcome() {
-      const p = PERSONAS[currentPersonaKey];
-      speakWithHighlight('welcomeTextContainer', `Hi ${p.name}! Ready to take a picture of your writing paper?`);
+      const rec = getSubjectRecord(activeStudentId);
+      speakWithHighlight('welcomeTextContainer', `Hi ${rec.name.replace(' (Sample)', '')}! Ready to take a picture of your writing paper?`);
     }
 
-    function snapDraft1() {
-      goToStep(2);
+    function readDraft1Aloud() {
+      speakWithHighlight('draft1DecodedContainer', getSubjectRecord(activeStudentId).draft1Decoded);
     }
 
-    // Handles both real iPad camera photos and bridges to Swift WKWebView if wrapped
-    function handleRealPhotoUpload(event, draftNum) {
+    function speakCoachQuestion() {
+      speakWithHighlight('coachQuestionContainer', getSubjectRecord(activeStudentId).coachQuestion);
+    }
+
+    function replayMyIdea() {
+      const rec = getSubjectRecord(activeStudentId);
+      speakWithHighlight('pencilTimeIdeaContainer', rec.oralIdea || "Tap back to tell Owl Coach your sentence first!");
+    }
+
+    function speakCelebration() {
+      speakWithHighlight('celebrationTextContainer', getSubjectRecord(activeStudentId).celebrationText);
+    }
+
+    function handlePhotoCapture(event, draftNum) {
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
       reader.onload = (e) => {
         const base64Image = e.target.result;
-        const imgHtml = `<img src="${base64Image}" class="w-full h-full object-contain" />`;
+        const rec = getSubjectRecord(activeStudentId);
 
         if (draftNum === 1) {
-          document.getElementById('draft1Drawing').innerHTML = imgHtml;
+          rec.draft1Image = base64Image;
+          if (!rec.isSample && rec.draft1Raw.startsWith("Tap here")) {
+            rec.draft1Raw = "Irote a stori abowt my favrit day.";
+            rec.draft1Decoded = "I wrote a story about my favorite day.";
+          }
+          saveAllState();
+          loadActiveStudentIntoUI();
+
           if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.appleIntelligenceBridge) {
+            const activeRubricString = customRubric.filter(r => r.active).map(r => r.criterion).join(', ');
             window.webkit.messageHandlers.appleIntelligenceBridge.postMessage({
               imageBase64: base64Image,
-              rubric: "1. Story Beginning/Middle/End, 2. Describing Words, 3. Capitals & Finger Spaces"
+              rubric: activeRubricString
             });
           } else {
             goToStep(2);
           }
         } else {
-          document.getElementById('draft2Drawing').innerHTML = imgHtml;
+          rec.draft2Image = base64Image;
+          if (!rec.isSample && rec.oralIdea) {
+            rec.draft2Raw = `${rec.draft1Raw} ${rec.oralIdea}`;
+            rec.draft2Decoded = `${rec.draft1Decoded} ${rec.oralIdea}`;
+          }
+          saveAllState();
+          loadActiveStudentIntoUI();
           goToStep(5);
         }
       };
       reader.readAsDataURL(file);
     }
 
-    // Callback from native Swift VisionKit + Apple Intelligence wrapper
+    function handleManualTextEdit(draftNum, val) {
+      const rec = getSubjectRecord(activeStudentId);
+      if (draftNum === 1) {
+        rec.draft1Raw = val;
+        rec.draft1Decoded = val;
+        renderKaraokeText('draft1DecodedContainer', val);
+      } else {
+        rec.draft2Raw = val;
+        rec.draft2Decoded = val;
+        document.getElementById('finalStoryDecoded').textContent = val;
+      }
+      saveAllState();
+    }
+
+    // Native Swift Bridge Receiver
     window.receiveNativeCoaching = function(data) {
-      const p = PERSONAS[currentPersonaKey];
-      if (data.rawText) p.draft1Raw = data.rawText;
-      if (data.decodedText) p.draft1Decoded = data.decodedText;
-      if (data.drawingCompliment) p.drawingCompliment = data.drawingCompliment;
-      if (data.rubricFocus) p.rubricFocus = data.rubricFocus;
-      if (data.coachQuestion) p.coachQuestion = data.coachQuestion;
-      loadPersonaUI();
+      const rec = getSubjectRecord(activeStudentId);
+      if (data.rawText) rec.draft1Raw = data.rawText;
+      if (data.decodedText) rec.draft1Decoded = data.decodedText;
+      if (data.drawingCompliment) rec.drawingCompliment = data.drawingCompliment;
+      if (data.rubricFocus) rec.rubricFocus = data.rubricFocus;
+      if (data.coachQuestion) rec.coachQuestion = data.coachQuestion;
+      saveAllState();
+      loadActiveStudentIntoUI();
       goToStep(2);
     };
-
-    function readDraft1Aloud() {
-      speakWithHighlight('draft1DecodedContainer', PERSONAS[currentPersonaKey].draft1Decoded);
-    }
-
-    function speakCoachQuestion() {
-      speakWithHighlight('coachQuestionContainer', PERSONAS[currentPersonaKey].coachQuestion);
-    }
-
-    function fillSimulatedVoiceIdea() {
-      const p = PERSONAS[currentPersonaKey];
-      studentIdeaText = p.simulatedVoiceIdea;
-      document.getElementById('teacherStudentOral').innerHTML = `<strong>${p.name} (Oral Rehearsal):</strong> "${studentIdeaText}"`;
-      speakWithHighlight('studentSpokenPreview', studentIdeaText);
-    }
 
     function toggleStudentMic() {
       const micBtn = document.getElementById('micButton');
@@ -874,7 +1117,7 @@
       const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
       if (!SpeechRecognition) {
-        fillSimulatedVoiceIdea();
+        toggleKeyboardBox();
         return;
       }
 
@@ -888,10 +1131,12 @@
 
         recognition.onresult = (event) => {
           const transcript = event.results[0][0].transcript;
-          studentIdeaText = transcript;
-          renderKaraokeText('studentSpokenPreview', studentIdeaText);
-          document.getElementById('teacherStudentOral').innerHTML = `<strong>${PERSONAS[currentPersonaKey].name} (Oral Rehearsal):</strong> "${studentIdeaText}"`;
-          speakWithHighlight('studentSpokenPreview', studentIdeaText);
+          const rec = getSubjectRecord(activeStudentId);
+          rec.oralIdea = transcript;
+          saveAllState();
+          renderKaraokeText('studentSpokenPreview', transcript);
+          renderKaraokeText('pencilTimeIdeaContainer', transcript);
+          speakWithHighlight('studentSpokenPreview', transcript);
         };
 
         recognition.onend = () => {
@@ -915,37 +1160,279 @@
     }
 
     function updateFromKeyboard(val) {
-      studentIdeaText = val || PERSONAS[currentPersonaKey].simulatedVoiceIdea;
-      renderKaraokeText('studentSpokenPreview', studentIdeaText);
+      const rec = getSubjectRecord(activeStudentId);
+      rec.oralIdea = val;
+      saveAllState();
+      renderKaraokeText('studentSpokenPreview', val);
+      renderKaraokeText('pencilTimeIdeaContainer', val);
     }
 
-    function replayMyIdea() {
-      speakWithHighlight('pencilTimeIdeaContainer', studentIdeaText);
+    function finishAndSaveSession() {
+      saveAllState();
+      goToStep(1);
     }
 
-    function speakCelebration() {
-      speakWithHighlight('celebrationTextContainer', PERSONAS[currentPersonaKey].celebrationText);
+    // ================= 1:1 STUDENT ROSTER MODAL =================
+    function openStudentPickerModal() {
+      renderStudentPickerGrid();
+      document.getElementById('student-picker-modal').classList.remove('hidden');
     }
 
+    function closeStudentPickerModal() {
+      document.getElementById('student-picker-modal').classList.add('hidden');
+    }
+
+    function renderStudentPickerGrid() {
+      const grid = document.getElementById('studentPickerGrid');
+      grid.innerHTML = classRoster.map((name, idx) => {
+        const id = `student:${name}`;
+        const rec = ensureStudentRecord(name, idx);
+        const isSelected = activeStudentId === id;
+        return `
+          <button onclick="selectActiveClassroomStudent('${id}')" class="p-4 rounded-2xl border-4 ${isSelected ? 'border-emerald-500 bg-emerald-50' : 'border-amber-200 bg-white hover:bg-amber-50/60'} flex items-center gap-3.5 shadow-sm active:scale-95 transition-all text-left">
+            <span class="text-4xl">${rec.avatar}</span>
+            <span class="text-xl font-bold text-slate-800 truncate">${rec.name}</span>
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectActiveClassroomStudent(studentId) {
+      activeStudentId = studentId;
+      inspectedSubjectId = studentId;
+      saveAllState();
+      loadActiveStudentIntoUI();
+      closeStudentPickerModal();
+      goToStep(1);
+    }
+
+    // ================= TEACHER DASHBOARD: ROSTER, RUBRIC & PORTFOLIO =================
     function toggleTeacherView() {
       const tv = document.getElementById('teacher-view');
-      tv.classList.toggle('hidden');
-    }
-
-    async function exportSessionReport() {
-      const p = PERSONAS[currentPersonaKey];
-      const reportText = `Wonder Write — Student Growth Report\nStudent: ${p.name}\nDraft 1 (Raw): ${p.draft1Raw}\nOral Rehearsal Idea: ${studentIdeaText}\nDraft 2 (Revised): ${p.draft2Raw}\nTeacher Note: ${p.teacherNote}`;
-      if (navigator.share) {
-        try {
-          await navigator.share({ title: `${p.name} Writing Report`, text: reportText });
-          return;
-        } catch (err) {}
+      const isOpening = tv.classList.contains('hidden');
+      if (isOpening) {
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        clearSpeechTimers();
+        populateTeacherDashboard();
+        tv.classList.remove('hidden');
+      } else {
+        tv.classList.add('hidden');
+        loadActiveStudentIntoUI();
       }
-      alert("AirDrop / Share Sheet Preview:\n\n" + reportText);
     }
 
+    function populateTeacherDashboard() {
+      // 1. Roster Textarea
+      document.getElementById('teacherRosterTextarea').value = classRoster.join('\n');
+      document.getElementById('rosterCountBadge').textContent = `${classRoster.length} Students`;
+
+      // 2. Rubric Builder
+      renderTeacherRubricBuilder();
+
+      // 3. Portfolio Selector (Classroom Students + Sample Students)
+      populatePortfolioSelector();
+      renderPortfolioDetails(inspectedSubjectId);
+    }
+
+    function saveClassroomRoster() {
+      const raw = document.getElementById('teacherRosterTextarea').value;
+      const names = raw.split('\n').map(n => n.trim()).filter(Boolean);
+      if (names.length > 0) {
+        classRoster = names;
+        classRoster.forEach((n, i) => ensureStudentRecord(n, i));
+        if (!activeStudentId.startsWith('sample:') && !classRoster.includes(activeStudentId.replace('student:', ''))) {
+          activeStudentId = `student:${classRoster[0]}`;
+        }
+        saveAllState();
+        populateTeacherDashboard();
+        const fb = document.getElementById('rosterSaveFeedback');
+        fb.textContent = "✅ Roster Updated!";
+        setTimeout(() => { fb.textContent = "Saved locally on iPad"; }, 2000);
+      }
+    }
+
+    function renderTeacherRubricBuilder() {
+      const list = document.getElementById('teacherRubricBuilderList');
+      list.innerHTML = customRubric.map((r, idx) => `
+        <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex flex-col gap-1.5">
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 flex-1">
+              <input type="checkbox" ${r.active ? 'checked' : ''} onchange="customRubric[${idx}].active = this.checked" class="w-4 h-4 accent-indigo-600" />
+              <input type="text" value="${r.criterion}" oninput="customRubric[${idx}].criterion = this.value" placeholder="Rubric Criterion Name" class="bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-800 flex-1" />
+            </div>
+            <button onclick="removeRubricCriterion(${idx})" class="text-slate-400 hover:text-rose-600 text-xs font-bold px-1.5">✕</button>
+          </div>
+          <input type="text" value="${r.prompt}" oninput="customRubric[${idx}].prompt = this.value" placeholder="Socratic coaching question Owl Coach will ask..." class="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-600 w-full" />
+        </div>
+      `).join('');
+    }
+
+    function addNewRubricRow() {
+      customRubric.push({
+        id: 'r_' + Date.now(),
+        active: true,
+        criterion: 'New Writing Target',
+        prompt: 'Can you tell me one more detail to make this part even stronger?'
+      });
+      renderTeacherRubricBuilder();
+    }
+
+    function removeRubricCriterion(idx) {
+      if (customRubric.length <= 1) return;
+      customRubric.splice(idx, 1);
+      renderTeacherRubricBuilder();
+    }
+
+    function resetDefaultRubric() {
+      customRubric = JSON.parse(JSON.stringify(DEFAULT_RUBRIC));
+      saveCustomRubric();
+      renderTeacherRubricBuilder();
+    }
+
+    function saveCustomRubric() {
+      saveAllState();
+      renderPortfolioDetails(inspectedSubjectId);
+      loadActiveStudentIntoUI();
+    }
+
+    function populatePortfolioSelector() {
+      const sel = document.getElementById('teacherPortfolioSelect');
+      const classroomOptions = classRoster.map(name => {
+        const id = `student:${name}`;
+        return `<option value="${id}" ${inspectedSubjectId === id ? 'selected' : ''}>👧👦 ${name}</option>`;
+      }).join('');
+
+      const sampleOptions = Object.keys(SAMPLE_PERSONAS).map(sKey => {
+        const s = SAMPLE_PERSONAS[sKey];
+        return `<option value="${sKey}" ${inspectedSubjectId === sKey ? 'selected' : ''}>${s.avatar} ${s.name}</option>`;
+      }).join('');
+
+      sel.innerHTML = `
+        <optgroup label="My Classroom Roster">
+          ${classroomOptions}
+        </optgroup>
+        <optgroup label="Pre-Loaded Demo Sample Students">
+          ${sampleOptions}
+        </optgroup>
+      `;
+    }
+
+    function selectPortfolioSubject(subjectId) {
+      inspectedSubjectId = subjectId;
+      renderPortfolioDetails(subjectId);
+    }
+
+    function launchSelectedInStudentView() {
+      activeStudentId = inspectedSubjectId;
+      saveAllState();
+      loadActiveStudentIntoUI();
+      toggleTeacherView();
+      goToStep(1);
+    }
+
+    function renderPortfolioDetails(subjectId) {
+      const rec = getSubjectRecord(subjectId);
+
+      document.getElementById('teacherDraft1Visual').innerHTML = rec.draft1Image
+        ? `<img src="${rec.draft1Image}" class="w-full h-full object-contain" />`
+        : rec.drawingSvg;
+      document.getElementById('teacherDraft2Visual').innerHTML = rec.draft2Image
+        ? `<img src="${rec.draft2Image}" class="w-full h-full object-contain" />`
+        : rec.drawingSvg;
+
+      document.getElementById('teacherDraft1Raw').textContent = `"${rec.draft1Raw}"`;
+      document.getElementById('teacherDraft1Decoded').textContent = `"${rec.draft1Decoded}"`;
+      document.getElementById('teacherDraft2Raw').textContent = `"${rec.draft2Raw}"`;
+      document.getElementById('teacherDraft2Decoded').textContent = `"${rec.draft2Decoded}"`;
+      document.getElementById('teacherCoachPrompt').innerHTML = `<strong>Coach (${rec.rubricFocus}):</strong> "${rec.coachQuestion}"`;
+      document.getElementById('teacherStudentOral').innerHTML = `<strong>${rec.name.replace(' (Sample)', '')} (Oral Rehearsal):</strong> "${rec.oralIdea || 'No voice recording yet'}"`;
+      document.getElementById('teacherAiNoteInput').value = rec.teacherNote || '';
+
+      const rubricContainer = document.getElementById('teacherRubricRows');
+      const activeCriteria = customRubric.filter(r => r.active);
+
+      rubricContainer.innerHTML = activeCriteria.map(r => {
+        const status = (rec.rubricStatuses && rec.rubricStatuses[r.criterion]) || 'Developing';
+        const badgeStyle = status === 'Meeting'
+          ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+          : status === 'Developing'
+          ? 'bg-amber-100 text-amber-800 border-amber-300'
+          : 'bg-rose-100 text-rose-800 border-rose-300';
+
+        return `
+          <div class="flex items-center justify-between p-2.5 rounded-xl border border-slate-200 bg-white">
+            <span class="font-semibold text-slate-700 text-xs">${r.criterion}</span>
+            <button onclick="cycleCriterionStatus('${r.criterion.replace(/'/g, "\\'")}')" class="px-3 py-1 rounded-full text-xs font-bold border ${badgeStyle}">
+              ${status}
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function cycleCriterionStatus(criterionName) {
+      const rec = getSubjectRecord(inspectedSubjectId);
+      if (!rec.rubricStatuses) rec.rubricStatuses = {};
+      const order = ['Emerging', 'Developing', 'Meeting'];
+      const current = rec.rubricStatuses[criterionName] || 'Developing';
+      const next = order[(order.indexOf(current) + 1) % order.length];
+      rec.rubricStatuses[criterionName] = next;
+      saveAllState();
+      renderPortfolioDetails(inspectedSubjectId);
+    }
+
+    function updateCurrentSubjectNote(val) {
+      const rec = getSubjectRecord(inspectedSubjectId);
+      rec.teacherNote = val;
+      saveAllState();
+    }
+
+    // ================= VISUAL PDF EXPORT & AIRDROP =================
+    function populatePrintableSheet(subjectId) {
+      const rec = getSubjectRecord(subjectId);
+      document.getElementById('pdfStudentAvatar').textContent = rec.avatar;
+      document.getElementById('pdfStudentName').textContent = `${rec.name.replace(' (Sample)', '')} — Writing Growth Report`;
+      document.getElementById('pdfDateText').textContent = new Date().toLocaleDateString('en-US', {
+        year: 'numeric', month: 'short', day: 'numeric'
+      });
+
+      document.getElementById('pdfDraft1Visual').innerHTML = rec.draft1Image
+        ? `<img src="${rec.draft1Image}" class="w-full h-full object-contain" />`
+        : rec.drawingSvg;
+      document.getElementById('pdfDraft2Visual').innerHTML = rec.draft2Image
+        ? `<img src="${rec.draft2Image}" class="w-full h-full object-contain" />`
+        : rec.drawingSvg;
+
+      document.getElementById('pdfDraft1Raw').textContent = `"${rec.draft1Raw}"`;
+      document.getElementById('pdfDraft1Decoded').textContent = `"${rec.draft1Decoded}"`;
+      document.getElementById('pdfDraft2Raw').textContent = `"${rec.draft2Raw}"`;
+      document.getElementById('pdfDraft2Decoded').textContent = `"${rec.draft2Decoded}"`;
+
+      document.getElementById('pdfCoachPrompt').innerHTML = `<strong>Owl Coach (${rec.rubricFocus}):</strong> "${rec.coachQuestion}"`;
+      document.getElementById('pdfStudentOral').innerHTML = `<strong>Student Oral Rehearsal:</strong> "${rec.oralIdea || 'N/A'}"`;
+      document.getElementById('pdfTeacherNote').textContent = rec.teacherNote || '';
+
+      const activeCriteria = customRubric.filter(r => r.active);
+      document.getElementById('pdfRubricTable').innerHTML = activeCriteria.map(r => {
+        const status = (rec.rubricStatuses && rec.rubricStatuses[r.criterion]) || 'Developing';
+        return `
+          <div class="flex items-center justify-between py-1.5 border-b border-slate-100">
+            <span class="font-semibold text-slate-800">${r.criterion}</span>
+            <span class="font-bold text-slate-900 px-2.5 py-0.5 rounded bg-slate-100">${status}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function printOrAirDropVisualPDF() {
+      populatePrintableSheet(inspectedSubjectId);
+      window.print();
+    }
+
+    // Initialize on load
     window.addEventListener('DOMContentLoaded', () => {
-      loadPersonaUI();
+      classRoster.forEach((n, i) => ensureStudentRecord(n, i));
+      loadActiveStudentIntoUI();
     });
   </script>
 </body>

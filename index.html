@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Wonder Write — Lower Primary Writing Coach Simulation</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Early Reader Font: Lexend (Single-story 'a' and 'g' for early readers) -->
+  <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Lexend', sans-serif;
+      background-color: #1e293b;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    /* iPad Frame Styling */
+    .ipad-frame {
+      width: 1024px;
+      height: 740px;
+      max-width: 98vw;
+      max-height: 86vh;
+      background-color: #FDFBF7;
+      border: 14px solid #0f172a;
+      border-radius: 36px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    /* Primary-friendly text sizing & line spacing */
+    .kid-text {
+      font-size: 1.65rem;
+      line-height: 1.65;
+      color: #1E293B;
+    }
+    .kid-text-lg {
+      font-size: 2rem;
+      line-height: 1.55;
+      color: #1E293B;
+    }
+    /* Word-by-word karaoke highlight */
+    .word-span {
+      padding: 2px 6px;
+      margin: 0 1px;
+      border-radius: 10px;
+      transition: background-color 0.08s ease, transform 0.08s ease, color 0.08s ease;
+      display: inline-block;
+    }
+    .word-active {
+      background-color: #FDE047;
+      color: #0F172A;
+      font-weight: 700;
+      transform: scale(1.08);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+    }
+    /* Primary Paper Simulation */
+    .primary-paper {
+      background-color: #ffffff;
+      border: 2px solid #cbd5e1;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    .handwriting-lines {
+      background-image: repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 22px,
+        #93c5fd 22px,
+        #93c5fd 23px,
+        transparent 23px,
+        transparent 34px,
+        #fca5a5 34px,
+        #fca5a5 36px
+      );
+      line-height: 36px;
+      font-family: 'Comic Sans MS', 'Chalkboard SE', 'Lexend', cursive;
+      font-size: 1.35rem;
+      color: #334155;
+      padding: 6px 14px;
+    }
+    /* Pulse animation for mic */
+    @keyframes micPulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+      50% { transform: scale(1.06); box-shadow: 0 0 0 18px rgba(16, 185, 129, 0); }
+    }
+    .mic-recording {
+      animation: micPulse 1.4s infinite;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-2">
+
+  <!-- ================= SIMULATION CONTROL BAR (FOR TESTING/DEMO) ================= -->
+  <div class="w-full max-w-[1024px] bg-slate-800 border border-slate-700 text-white rounded-2xl px-4 py-2.5 mb-2 flex flex-wrap items-center justify-between gap-2 text-xs sm:text-sm shadow-lg">
+    <div class="flex items-center gap-2">
+      <span class="bg-amber-400 text-slate-950 font-bold px-2.5 py-0.5 rounded-full text-xs uppercase tracking-wider">Sim Mode</span>
+      <label class="text-slate-300 font-medium">Sample Student:</label>
+      <select id="simPersonaSelect" onchange="changePersona(this.value)" class="bg-slate-900 border border-slate-600 rounded-lg px-2.5 py-1 text-white font-medium focus:outline-none">
+        <option value="leo">Leo (Age 6) — Phonetic Spelling + Missing Ending</option>
+        <option value="maya">Maya (Age 7) — Needs Describing Words (Adjectives)</option>
+        <option value="sam">Sam (Age 6) — Missing Finger Spaces & Capitals</option>
+      </select>
+    </div>
+
+    <div class="flex items-center gap-1.5">
+      <span class="text-slate-400 hidden md:inline mr-1">Jump to:</span>
+      <button onclick="goToStep(1)" class="sim-step-btn bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded-lg">1. Home</button>
+      <button onclick="goToStep(2)" class="sim-step-btn bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded-lg">2. Draft 1</button>
+      <button onclick="goToStep(3)" class="sim-step-btn bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded-lg">3. Coach</button>
+      <button onclick="goToStep(4)" class="sim-step-btn bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded-lg">4. Pencil Time</button>
+      <button onclick="goToStep(5)" class="sim-step-btn bg-slate-700 hover:bg-slate-600 px-2.5 py-1 rounded-lg">5. Draft 2</button>
+      <button onclick="toggleTeacherView()" id="teacherToggleBtn" class="bg-indigo-600 hover:bg-indigo-500 font-semibold px-3 py-1 rounded-lg ml-1 flex items-center gap-1">
+        <span>👩‍🏫 Teacher View</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= IPAD SIMULATOR FRAME ================= -->
+  <div class="ipad-frame">
+
+    <!-- iPad Status Bar + Kid Top Bar -->
+    <header class="bg-amber-50/90 border-b border-amber-200/70 px-6 py-3 flex items-center justify-between shrink-0">
+      <div class="flex items-center gap-3">
+        <div id="studentAvatar" class="w-12 h-12 rounded-2xl bg-emerald-100 border-2 border-emerald-400 flex items-center justify-center text-2xl shadow-sm">
+          🦁
+        </div>
+        <div>
+          <h1 id="studentNameHeader" class="text-xl font-bold text-slate-800">Leo's Writing Pad</h1>
+          <div class="flex items-center gap-1.5 text-xs font-medium text-emerald-700">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span id="ttsSyncStatus">Apple Intelligence • Offline Ready</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Dots for Kids -->
+      <div id="progressDots" class="flex items-center gap-3">
+        <div id="dot-1" class="w-4 h-4 rounded-full bg-emerald-500 transition-all"></div>
+        <div id="dot-2" class="w-4 h-4 rounded-full bg-slate-300 transition-all"></div>
+        <div id="dot-3" class="w-4 h-4 rounded-full bg-slate-300 transition-all"></div>
+        <div id="dot-4" class="w-4 h-4 rounded-full bg-slate-300 transition-all"></div>
+        <div id="dot-5" class="w-4 h-4 rounded-full bg-slate-300 transition-all"></div>
+      </div>
+
+      <!-- Subtle Teacher Lock Button -->
+      <button onclick="toggleTeacherView()" title="Teacher Dashboard" class="w-11 h-11 rounded-xl bg-slate-200/70 hover:bg-slate-300 flex items-center justify-center text-slate-600">
+        🔒
+      </button>
+    </header>
+
+    <!-- ================= MAIN VIEWPORT ================= -->
+    <main class="flex-1 overflow-y-auto p-6 flex flex-col justify-between relative">
+
+      <!-- STEP 1: WELCOME & SNAP PHOTO -->
+      <section id="step-1" class="flex-1 flex flex-col items-center justify-center text-center max-w-2xl mx-auto gap-6">
+        <div class="w-28 h-28 rounded-full bg-amber-100 border-4 border-amber-300 flex items-center justify-center text-6xl shadow-md">
+          🦉
+        </div>
+        <div id="welcomeTextContainer" class="kid-text-lg font-semibold px-4">
+          <!-- Populated dynamically with karaoke words -->
+        </div>
+
+        <button onclick="speakWelcome()" class="bg-sky-500 hover:bg-sky-600 text-white px-5 py-2.5 rounded-2xl font-bold flex items-center gap-2 shadow active:scale-95 text-lg">
+          <span>🔊</span>
+          <span>Listen to Owl Coach</span>
+        </button>
+
+        <div class="flex flex-wrap items-center justify-center gap-6 mt-1">
+          <!-- Primary Action: Simulated or Live Camera -->
+          <button onclick="snapDraft1()" class="min-w-[260px] min-h-[110px] bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-3xl shadow-xl flex flex-col items-center justify-center gap-2 px-8 py-5 transition-all border-b-8 border-emerald-700">
+            <span class="text-5xl">📷</span>
+            <span class="text-2xl font-bold">Snap My Writing</span>
+          </button>
+
+          <!-- Optional Real Photo Upload for Testing -->
+          <label class="min-w-[200px] min-h-[110px] bg-sky-100 hover:bg-sky-200 active:scale-95 text-sky-900 rounded-3xl shadow-md flex flex-col items-center justify-center gap-2 px-6 py-5 cursor-pointer transition-all border-b-4 border-sky-300">
+            <span class="text-4xl">🖼️</span>
+            <span class="text-lg font-bold">Upload Real Photo</span>
+            <input type="file" accept="image/*" class="hidden" onchange="handleRealPhotoUpload(event, 1)" />
+          </label>
+        </div>
+      </section>
+
+      <!-- STEP 2: DRAFT 1 READ-BACK (VISION OCR + DRAWING RECOGNITION) -->
+      <section id="step-2" class="hidden flex-1 grid grid-cols-12 gap-6 items-center">
+        <!-- Left: Simulated Student Paper (Drawing + Handwriting) -->
+        <div class="col-span-5 flex flex-col gap-3">
+          <div class="primary-paper p-4">
+            <div class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1 flex justify-between">
+              <span>My Paper (Draft 1)</span>
+              <span id="visionBadge" class="bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">🎨 Drawing Detected</span>
+            </div>
+            <!-- SVG Drawing Box -->
+            <div id="draft1Drawing" class="w-full h-36 bg-sky-50 rounded-xl border border-slate-200 flex items-center justify-center mb-3 overflow-hidden">
+              <!-- Populated by persona -->
+            </div>
+            <!-- Handwritten Text Simulation -->
+            <div id="draft1RawHandwriting" class="handwriting-lines min-h-[110px]">
+              <!-- Populated by persona -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: What Owl Coach Read -->
+        <div class="col-span-7 flex flex-col justify-between h-full py-2">
+          <div class="bg-white border-2 border-amber-200 rounded-3xl p-6 shadow-sm">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-3">
+                <span class="text-4xl">🦉</span>
+                <span class="text-lg font-bold text-amber-900 bg-amber-100 px-3 py-1 rounded-full">Let's read your story!</span>
+              </div>
+              <button onclick="readDraft1Aloud()" class="bg-sky-500 hover:bg-sky-600 text-white px-5 py-3 rounded-2xl font-bold flex items-center gap-2 shadow-md active:scale-95 text-lg">
+                <span>🔊</span>
+                <span>Listen</span>
+              </button>
+            </div>
+
+            <!-- Drawing recognition compliment -->
+            <p id="drawingCompliment" class="text-lg text-emerald-800 bg-emerald-50 border border-emerald-200 rounded-2xl px-4 py-2.5 mb-4 font-medium"></p>
+
+            <!-- Decoded Text with Karaoke Highlighting -->
+            <div id="draft1DecodedContainer" class="kid-text bg-amber-50/70 p-5 rounded-2xl border border-amber-200/80 min-h-[120px]"></div>
+          </div>
+
+          <!-- Bottom Action Bar (Max 2 Actions) -->
+          <div class="flex items-center justify-between gap-4 mt-4">
+            <button onclick="goToStep(1)" class="min-h-[76px] px-6 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-2xl font-bold text-xl flex items-center gap-3">
+              <span>🔄</span>
+              <span>Retake Photo</span>
+            </button>
+            <button onclick="goToStep(3)" class="flex-1 min-h-[82px] bg-emerald-500 hover:bg-emerald-600 text-white rounded-3xl font-bold text-2xl flex items-center justify-center gap-3 shadow-lg border-b-8 border-emerald-700 active:scale-95">
+              <span>Talk with Owl Coach</span>
+              <span>➡️</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- STEP 3: SOCRATIC COACHING & ORAL REHEARSAL -->
+      <section id="step-3" class="hidden flex-1 flex flex-col justify-between max-w-4xl mx-auto w-full">
+        <!-- Coach Question Card -->
+        <div class="bg-white border-4 border-sky-200 rounded-3xl p-6 shadow-md flex items-start gap-5">
+          <div class="w-20 h-20 rounded-2xl bg-amber-100 border-2 border-amber-300 flex items-center justify-center text-5xl shrink-0">
+            🦉
+          </div>
+          <div class="flex-1">
+            <div class="flex items-center justify-between mb-2">
+              <span id="activeRubricTag" class="text-sm font-bold uppercase tracking-wider bg-sky-100 text-sky-900 px-3 py-1 rounded-full">
+                Rubric Goal: Ending
+              </span>
+              <button onclick="speakCoachQuestion()" class="bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded-xl font-bold flex items-center gap-2 shadow">
+                <span>🔊</span>
+                <span>Listen Again</span>
+              </button>
+            </div>
+            <div id="coachQuestionContainer" class="kid-text font-semibold">
+              <!-- Karaoke words injected here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Student Oral Rehearsal Input Area -->
+        <div class="bg-emerald-50/80 border-2 border-emerald-200 rounded-3xl p-5 my-3 flex flex-col items-center text-center">
+          <p class="text-base font-bold text-emerald-900 uppercase tracking-wide mb-2">Say or Type Your Idea First:</p>
+          <div id="studentSpokenPreview" class="kid-text font-semibold bg-white w-full rounded-2xl p-4 border border-emerald-300 min-h-[76px] flex flex-wrap items-center justify-center text-slate-700">
+            Tap the green microphone and tell me your idea!
+          </div>
+
+          <!-- Giant Multimodal Controls -->
+          <div class="flex flex-wrap items-center justify-center gap-4 mt-4 w-full">
+            <!-- Giant Tap to Speak Button -->
+            <button id="micButton" onclick="toggleStudentMic()" class="min-w-[230px] min-h-[82px] bg-emerald-500 hover:bg-emerald-600 text-white rounded-3xl font-bold text-2xl px-6 py-4 flex items-center justify-center gap-3 shadow-lg border-b-8 border-emerald-700 transition-all">
+              <span class="text-3xl">🎤</span>
+              <span id="micButtonLabel">Tap & Speak</span>
+            </button>
+
+            <!-- Quick Sim Voice Button (so teacher can test without speaking aloud) -->
+            <button onclick="fillSimulatedVoiceIdea()" class="min-h-[82px] bg-amber-200 hover:bg-amber-300 text-amber-950 rounded-3xl font-bold text-lg px-5 py-4 flex items-center gap-2 border-b-4 border-amber-400">
+              <span>✨</span>
+              <span>Simulate Kid's Voice</span>
+            </button>
+
+            <!-- Toggle Keyboard Input -->
+            <button onclick="toggleKeyboardBox()" class="min-h-[82px] bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-3xl font-bold text-lg px-5 py-4 flex items-center gap-2 border-b-4 border-slate-400">
+              <span>⌨️</span>
+              <span>Type</span>
+            </button>
+          </div>
+
+          <!-- Optional Simple Keyboard Input -->
+          <div id="keyboardBox" class="hidden w-full mt-3">
+            <input id="studentTypeInput" type="text" placeholder="Type your sentence here..." oninput="updateFromKeyboard(this.value)" class="w-full p-4 rounded-2xl border-2 border-slate-300 text-2xl font-semibold focus:outline-none focus:border-emerald-500" />
+          </div>
+        </div>
+
+        <!-- Next Step Button -->
+        <div class="flex justify-end">
+          <button id="toPencilTimeBtn" onclick="goToStep(4)" class="w-full min-h-[78px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-3xl font-bold text-2xl flex items-center justify-center gap-3 shadow-lg border-b-8 border-indigo-800">
+            <span>✏️ Ready for Pencil Time!</span>
+            <span>➡️</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- STEP 4: "PENCIL TIME" PAUSE (PHYSICAL PAPER REVISION WITH MEMORY REPLAY) -->
+      <section id="step-4" class="hidden flex-1 flex flex-col items-center justify-between max-w-3xl mx-auto w-full text-center py-2">
+        <div class="flex items-center gap-3 bg-amber-100 border-2 border-amber-300 px-6 py-2.5 rounded-full">
+          <span class="text-3xl">✏️</span>
+          <h2 class="text-2xl font-bold text-amber-950">Pencil Time!</h2>
+        </div>
+
+        <p class="kid-text font-medium px-4">
+          Pick up your pencil and add your awesome idea to your paper. Tap the blue speaker anytime to hear your sentence again!
+        </p>
+
+        <!-- Memory Bridge Card: Displays and replays the student's own spoken sentence -->
+        <div class="w-full bg-white border-4 border-emerald-400 rounded-3xl p-6 shadow-lg flex flex-col items-center gap-4">
+          <span class="text-sm font-bold uppercase tracking-wider text-emerald-800 bg-emerald-100 px-3 py-1 rounded-full">
+            My New Sentence to Write:
+          </span>
+          <div id="pencilTimeIdeaContainer" class="kid-text-lg font-bold text-slate-900 py-2">
+            <!-- Student's planned sentence with karaoke words -->
+          </div>
+          <button onclick="replayMyIdea()" class="min-w-[260px] min-h-[76px] bg-sky-500 hover:bg-sky-600 active:scale-95 text-white rounded-2xl font-bold text-2xl px-6 py-3 flex items-center justify-center gap-3 shadow-md border-b-4 border-sky-700">
+            <span>🔊</span>
+            <span>Replay My Idea</span>
+          </button>
+        </div>
+
+        <!-- Snap Revised Paper Button -->
+        <div class="flex items-center gap-4 w-full">
+          <button onclick="goToStep(3)" class="min-h-[82px] px-6 bg-slate-200 hover:bg-slate-300 text-slate-800 rounded-3xl font-bold text-xl">
+            ⬅️ Back
+          </button>
+          <button onclick="goToStep(5)" class="flex-1 min-h-[86px] bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-3xl font-bold text-2xl flex items-center justify-center gap-3 shadow-xl border-b-8 border-emerald-700">
+            <span>📷</span>
+            <span>I Wrote It! Snap My Paper</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- STEP 5: DRAFT 2 COMPARISON & CELEBRATION -->
+      <section id="step-5" class="hidden flex-1 flex flex-col justify-between">
+        <div class="grid grid-cols-12 gap-5 items-center flex-1">
+          <!-- Left: Revised Paper (Draft 2) -->
+          <div class="col-span-5">
+            <div class="primary-paper p-4 border-emerald-400 border-4">
+              <div class="text-xs font-bold uppercase tracking-wider text-emerald-700 mb-1 flex justify-between">
+                <span>✨ My Updated Paper (Draft 2)</span>
+                <span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">Added Detail!</span>
+              </div>
+              <div id="draft2Drawing" class="w-full h-32 bg-sky-50 rounded-xl border border-slate-200 flex items-center justify-center mb-3 overflow-hidden"></div>
+              <div id="draft2RawHandwriting" class="handwriting-lines min-h-[125px]"></div>
+            </div>
+          </div>
+
+          <!-- Right: Celebration & Growth Feedback -->
+          <div class="col-span-7 flex flex-col justify-between h-full py-2">
+            <div class="bg-white border-4 border-amber-300 rounded-3xl p-6 shadow-md relative">
+              <div class="flex items-center justify-between mb-3">
+                <div class="flex items-center gap-3">
+                  <span class="text-5xl">🌟</span>
+                  <div>
+                    <h3 class="text-2xl font-bold text-slate-900">Super Writer Star!</h3>
+                    <p class="text-sm font-semibold text-emerald-700">Saved to Teacher Portfolio</p>
+                  </div>
+                </div>
+                <button onclick="speakCelebration()" class="bg-sky-500 hover:bg-sky-600 text-white px-4 py-2.5 rounded-2xl font-bold flex items-center gap-2 shadow">
+                  <span>🔊</span>
+                  <span>Listen</span>
+                </button>
+              </div>
+
+              <div id="celebrationTextContainer" class="kid-text mb-4"></div>
+
+              <!-- Before vs After Highlight Box -->
+              <div class="bg-emerald-50 border-2 border-emerald-200 rounded-2xl p-4">
+                <div class="text-xs font-bold uppercase text-emerald-800 mb-1">Look how your story grew:</div>
+                <p id="finalStoryDecoded" class="text-xl font-semibold text-slate-800"></p>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between gap-4 mt-4">
+              <button onclick="goToStep(1)" class="flex-1 min-h-[78px] bg-emerald-500 hover:bg-emerald-600 text-white rounded-3xl font-bold text-2xl flex items-center justify-center gap-3 shadow-lg border-b-8 border-emerald-700">
+                <span>🎉 Finish & Save</span>
+              </button>
+              <button onclick="toggleTeacherView()" class="min-h-[78px] px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-3xl font-bold text-xl flex items-center gap-2 shadow-lg border-b-8 border-indigo-800">
+                <span>👩‍🏫 View Teacher Data</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= TEACHER DASHBOARD OVERLAY ================= -->
+      <section id="teacher-view" class="hidden absolute inset-0 bg-slate-50 z-30 p-6 overflow-y-auto flex flex-col justify-between">
+        <div>
+          <!-- Top Teacher Header -->
+          <div class="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-slate-200">
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 px-2.5 py-1 rounded-full">1:1 iPad Local Storage + Apple Intelligence</span>
+              <h2 class="text-2xl font-bold text-slate-900 mt-1">Teacher Writing Rubric & Growth Dashboard</h2>
+            </div>
+            <div class="flex items-center gap-3">
+              <button onclick="exportSessionReport()" class="bg-sky-600 hover:bg-sky-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm flex items-center gap-2 shadow">
+                <span>📡</span>
+                <span>AirDrop / Export Report</span>
+              </button>
+              <button onclick="toggleTeacherView()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-xl font-semibold text-sm">
+                ✕ Return to Student View
+              </button>
+            </div>
+          </div>
+
+          <!-- Active Class Rubric Controls -->
+          <div class="my-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
+            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">Active Lower Primary Writing Rubric Targets</h3>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+              <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold text-slate-700">
+                <input type="checkbox" checked class="w-4 h-4 accent-indigo-600" />
+                <span>1. Story Beginning / Middle / End</span>
+              </label>
+              <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold text-slate-700">
+                <input type="checkbox" checked class="w-4 h-4 accent-indigo-600" />
+                <span>2. Describing Words (Adjectives)</span>
+              </label>
+              <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold text-slate-700">
+                <input type="checkbox" checked class="w-4 h-4 accent-indigo-600" />
+                <span>3. Capital Letters & Finger Spaces</span>
+              </label>
+              <label class="flex items-center gap-2 p-2.5 rounded-xl border border-slate-200 bg-slate-50 font-semibold text-slate-700">
+                <input type="checkbox" checked class="w-4 h-4 accent-indigo-600" />
+                <span>4. Ignore Phonetic Spelling</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Student Evidence Comparison Grid -->
+          <div class="grid grid-cols-12 gap-4">
+            <!-- Draft 1 vs Draft 2 OCR & Photo Evidence -->
+            <div class="col-span-7 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col gap-3">
+              <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500">Before & After Oral Rehearsal Evidence</h3>
+              
+              <div class="grid grid-cols-2 gap-3">
+                <div class="p-3 rounded-xl bg-slate-50 border border-slate-200">
+                  <div class="text-xs font-bold text-slate-500 uppercase mb-1">Draft 1 (Raw OCR)</div>
+                  <p id="teacherDraft1Raw" class="font-mono text-sm text-slate-700 mb-2"></p>
+                  <div class="text-xs font-bold text-slate-500 uppercase mb-1">Decoded Intent</div>
+                  <p id="teacherDraft1Decoded" class="text-sm font-semibold text-slate-900"></p>
+                </div>
+
+                <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200">
+                  <div class="text-xs font-bold text-emerald-700 uppercase mb-1">Draft 2 (After Coaching)</div>
+                  <p id="teacherDraft2Raw" class="font-mono text-sm text-slate-700 mb-2"></p>
+                  <div class="text-xs font-bold text-emerald-700 uppercase mb-1">Decoded Revision</div>
+                  <p id="teacherDraft2Decoded" class="text-sm font-semibold text-emerald-950"></p>
+                </div>
+              </div>
+
+              <!-- Coaching Transcript -->
+              <div class="p-3 rounded-xl bg-sky-50 border border-sky-200 text-sm">
+                <div class="text-xs font-bold text-sky-800 uppercase mb-1">Socratic Coaching & Oral Rehearsal Transcript</div>
+                <p id="teacherCoachPrompt" class="text-slate-700 mb-1"></p>
+                <p id="teacherStudentOral" class="font-semibold text-sky-950"></p>
+              </div>
+            </div>
+
+            <!-- AI Rubric Mastery Snapshot -->
+            <div class="col-span-5 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+              <div>
+                <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">Apple Intelligence Rubric Snapshot</h3>
+                <div id="teacherRubricRows" class="space-y-2.5 text-sm">
+                  <!-- Populated dynamically -->
+                </div>
+              </div>
+
+              <div class="mt-4 p-3 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-950">
+                <span class="font-bold uppercase block mb-1">AI Coach Instructional Note:</span>
+                <span id="teacherAiNote"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ================= APPLICATION & SIMULATION LOGIC ================= -->
+  <script>
+    // 3 Realistic Lower Primary Student Personas
+    const PERSONAS = {
+      leo: {
+        name: "Leo",
+        avatar: "🦁",
+        drawingSvg: `
+          <svg viewBox="0 0 300 110" class="w-full h-full">
+            <rect width="300" height="110" fill="#e0f2fe"/>
+            <circle cx="45" cy="30" r="18" fill="#facc15"/>
+            <rect y="82" width="300" height="28" fill="#86efac"/>
+            <circle cx="240" cy="52" r="24" fill="#4ade80"/>
+            <rect x="235" y="70" width="10" height="18" fill="#78350f"/>
+            <ellipse cx="135" cy="72" rx="22" ry="12" fill="#b45309"/>
+            <circle cx="158" cy="64" r="10" fill="#b45309"/>
+            <circle cx="161" cy="62" r="2" fill="#000"/>
+          </svg>`,
+        drawingCompliment: "🎨 I see your drawing of a sunny park and a brown dog!",
+        draft1Raw: "I wnt to the prk wit my dg.",
+        draft1Decoded: "I went to the park with my dog.",
+        rubricFocus: "Rubric Goal: Story Ending",
+        coachQuestion: "I love your story about going to the park with your dog! What fun thing happened at the very end?",
+        simulatedVoiceIdea: "We chased a big red ball and went home for dinner.",
+        draft2Raw: "I wnt to the prk wit my dg. We chasd a big red bal and wnt hom.",
+        draft2Decoded: "I went to the park with my dog. We chased a big red ball and went home.",
+        celebrationText: "Amazing job, Leo! You talked through your ending and wrote a whole new sentence about chasing the big red ball!",
+        rubricScores: [
+          { criterion: "Story Beginning / Middle / End", status: "Meeting (After Coaching)", color: "bg-emerald-100 text-emerald-800" },
+          { criterion: "Describing Words (big, red)", status: "Meeting", color: "bg-emerald-100 text-emerald-800" },
+          { criterion: "Capitals & Finger Spaces", status: "Meeting", color: "bg-emerald-100 text-emerald-800" },
+          { criterion: "Phonetic Spelling (wnt, prk, chasd)", status: "Age-Appropriate", color: "bg-sky-100 text-sky-800" }
+        ],
+        teacherNote: "Leo decoded his own phonetic writing confidently. During oral rehearsal, he generated a complete ending sentence with two adjectives ('big red ball') and successfully transferred it to his physical paper."
+      },
+      maya: {
+        name: "Maya",
+        avatar: "🐼",
+        drawingSvg: `
+          <svg viewBox="0 0 300 110" class="w-full h-full">
+            <rect width="300" height="110" fill="#fef3c7"/>
+            <rect x="60" y="55" width="180" height="40" rx="12" fill="#f472b6"/>
+            <circle cx="150" cy="52" r="16" fill="#fb923c"/>
+            <polygon points="136,42 142,28 148,40" fill="#fb923c"/>
+            <polygon points="152,40 158,28 164,42" fill="#fb923c"/>
+          </svg>`,
+        drawingCompliment: "🎨 I see your drawing of a cozy cat sitting on a pink couch!",
+        draft1Raw: "My cat sat on the mat. She ate fud.",
+        draft1Decoded: "My cat sat on the mat. She ate food.",
+        rubricFocus: "Rubric Goal: Describing Words",
+        coachQuestion: "Your cat sounds so sweet! Can you tell me what your cat looks or feels like using describing words?",
+        simulatedVoiceIdea: "My fluffy orange cat sat on the soft mat.",
+        draft2Raw: "My flufy ornj cat sat on the soft mat. She ate fud.",
+        draft2Decoded: "My fluffy orange cat sat on the soft mat. She ate food.",
+        celebrationText: "Wonderful revising, Maya! You added the describing words fluffy, orange, and soft so the reader can picture your cat!",
+        rubricScores: [
+          { criterion: "Story Beginning / Middle / End", status: "Developing", color: "bg-amber-100 text-amber-800" },
+          { criterion: "Describing Words (fluffy, orange, soft)", status: "Meeting (After Coaching)", color: "bg-emerald-100 text-emerald-800" },
+          { criterion: "Capitals & Finger Spaces", status: "Meeting", color: "bg-emerald-100 text-emerald-800" },
+          { criterion: "Phonetic Spelling (flufy, ornj, fud)", status: "Age-Appropriate", color: "bg-sky-100 text-sky-800" }
+        ],
+        teacherNote: "Maya initially wrote simple kernel sentences. With one Socratic prompt, she orally rehearsed three adjectives ('fluffy orange', 'soft') and revised her first sentence on paper."
+      },
+      sam: {
+        name: "Sam",
+        avatar: "🦖",
+        drawingSvg: `
+          <svg viewBox="0 0 300 110" class="w-full h-full">
+            <rect width="300" height="110" fill="#1e1b4b"/>
+            <circle cx="240" cy="35" r="22" fill="#fef08a"/>
+            <polygon points="110,75 145,25 180,75" fill="#ef4444"/>
+            <rect x="125" y="55" width="40" height="30" fill="#e2e8f0"/>
+          </svg>`,
+        drawingCompliment: "🎨 Wow! I see a red rocket flying toward the bright moon!",
+        draft1Raw: "myrokitflutothemun",
+        draft1Decoded: "My rocket flew to the moon.",
+        rubricFocus: "Rubric Goal: Finger Spaces & Capitals",
+        coachQuestion: "Your rocket story is so exciting! How can we use our finger spaces and a capital letter so readers can see every word clearly?",
+        simulatedVoiceIdea: "I will put a capital M and finger spaces between My rocket flew to the moon.",
+        draft2Raw: "My rokit flu to the mun.",
+        draft2Decoded: "My rocket flew to the moon.",
+        celebrationText: "High five, Sam! Look how clear your words are now that you used a capital M and finger spaces between every word!",
+        rubricScores: [
+          { criterion: "Story Beginning / Middle / End", status: "Emerging", color: "bg-amber-100 text-amber-800" },
+          { criterion: "Describing Words", status: "Emerging", color: "bg-amber-100 text-amber-800" },
+          { criterion: "Capitals & Finger Spaces", status: "Meeting (After Coaching)", color: "bg-emerald-100 text-emerald-800" },
+          { criterion: "Phonetic Spelling (rokit, flu, mun)", status: "Age-Appropriate", color: "bg-sky-100 text-sky-800" }
+        ],
+        teacherNote: "VisionKit + drawing context helped decode Sam's unspaced string ('myrokitflutothemun'). After coaching, Sam rewrote the sentence with clear finger spaces, a capital M, and a period."
+      }
+    };
+
+    let currentPersonaKey = 'leo';
+    let currentStep = 1;
+    let studentIdeaText = PERSONAS.leo.simulatedVoiceIdea;
+    let isRecording = false;
+    let recognition = null;
+
+    // Global TTS & Karaoke Synchronization State
+    let activeSpeechTimeouts = [];
+    let currentUtterance = null;
+    let preferredVoice = null;
+
+    // Select a high-quality local/native English voice that supports word boundaries
+    function selectBestVoice() {
+      if (!window.speechSynthesis) return;
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices.length) return;
+      preferredVoice =
+        voices.find(v => v.lang.startsWith('en') && (v.name.includes('Samantha') || v.name.includes(' Nicky') || v.name.includes('Aaron') || v.name.includes('Natural'))) ||
+        voices.find(v => v.lang.startsWith('en-US') && v.localService) ||
+        voices.find(v => v.lang.startsWith('en'));
+    }
+
+    if (window.speechSynthesis) {
+      window.speechSynthesis.onvoiceschanged = selectBestVoice;
+      selectBestVoice();
+    }
+
+    function clearSpeechTimers() {
+      activeSpeechTimeouts.forEach(t => clearTimeout(t));
+      activeSpeechTimeouts = [];
+      document.querySelectorAll('.word-span').forEach(s => s.classList.remove('word-active'));
+    }
+
+    // Tokenize text with exact character start/end offsets so native onboundary events lock onto the right word
+    function tokenizeWithOffsets(text) {
+      const tokens = [];
+      const regex = /\S+/g;
+      let match;
+      while ((match = regex.exec(text)) !== null) {
+        tokens.push({
+          word: match[0],
+          start: match.index,
+          end: match.index + match[0].length
+        });
+      }
+      return tokens;
+    }
+
+    // Render text as individual spans with exact char-index metadata
+    function renderKaraokeText(containerId, text) {
+      const container = document.getElementById(containerId);
+      if (!container) return [];
+      const tokens = tokenizeWithOffsets(text);
+      container.innerHTML = tokens
+        .map((t, idx) => `<span class="word-span" data-word-idx="${idx}" data-start="${t.start}" data-end="${t.end}">${t.word}</span>`)
+        .join(' ');
+      return tokens;
+    }
+
+    // Synchronized TTS + Karaoke Highlighting Engine
+    function speakWithHighlight(containerId, rawText) {
+      if (!window.speechSynthesis) return;
+
+      // Cancel any ongoing speech and clear previous timers immediately
+      window.speechSynthesis.cancel();
+      clearSpeechTimers();
+
+      const cleanText = rawText.replace(/\s+/g, ' ').trim();
+      const tokens = renderKaraokeText(containerId, cleanText);
+      const container = document.getElementById(containerId);
+      const wordSpans = container ? Array.from(container.querySelectorAll('.word-span')) : [];
+
+      if (!tokens.length || !wordSpans.length) return;
+
+      const speechRate = 0.9; // Calm pace for ages 6-8
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      currentUtterance = utterance; // Prevent garbage collection bug in Safari/Chrome
+      if (preferredVoice) utterance.voice = preferredVoice;
+      utterance.rate = speechRate;
+      utterance.pitch = 1.04;
+
+      let nativeBoundaryDetected = false;
+
+      const highlightSpanAt = (index) => {
+        wordSpans.forEach(s => s.classList.remove('word-active'));
+        if (wordSpans[index]) {
+          wordSpans[index].classList.add('word-active');
+        }
+      };
+
+      // 1. Primary Method: Native OS/Browser Word Boundary Events (iPadOS Safari, macOS, Edge, Chrome local voices)
+      utterance.onboundary = (event) => {
+        if (event.name && event.name !== 'word') return;
+
+        nativeBoundaryDetected = true;
+        // Stop any fallback timers immediately so they never fight with native events
+        activeSpeechTimeouts.forEach(t => clearTimeout(t));
+        activeSpeechTimeouts = [];
+
+        const charIdx = event.charIndex;
+        // Find the token that contains or starts right after charIdx
+        let matchedIdx = tokens.findIndex(t => charIdx >= t.start && charIdx < t.end);
+        if (matchedIdx === -1) {
+          matchedIdx = tokens.findIndex(t => t.start >= charIdx);
+        }
+        if (matchedIdx !== -1) {
+          highlightSpanAt(matchedIdx);
+        }
+      };
+
+      // 2. Smart Fallback Method: Only runs if the voice doesn't emit native onboundary within 250ms
+      utterance.onstart = () => {
+        const checkTimer = setTimeout(() => {
+          if (nativeBoundaryDetected) return; // Native events are working; do nothing!
+
+          // Calculate syllable & punctuation-weighted timing for voices without boundary support
+          let cumulativeDelay = 0;
+          tokens.forEach((token, idx) => {
+            const tId = setTimeout(() => {
+              if (!nativeBoundaryDetected) {
+                highlightSpanAt(idx);
+              }
+            }, cumulativeDelay);
+            activeSpeechTimeouts.push(tId);
+
+            // Strip punctuation to measure actual spoken word length
+            const stripped = token.word.replace(/[^a-zA-Z0-9]/g, '');
+            // Base time (~190ms) + 52ms per character, scaled by speech rate
+            let wordDuration = ((185 + stripped.length * 52) / speechRate);
+
+            // Add natural TTS breath pauses after punctuation so highlighting never outruns pauses
+            if (/[.!?]$/.test(token.word)) {
+              wordDuration += 410;
+            } else if (/[,;:]$/.test(token.word)) {
+              wordDuration += 220;
+            }
+
+            cumulativeDelay += wordDuration;
+          });
+        }, 220);
+
+        activeSpeechTimeouts.push(checkTimer);
+      };
+
+      utterance.onend = () => {
+        clearSpeechTimers();
+      };
+
+      utterance.onerror = () => {
+        clearSpeechTimers();
+      };
+
+      // Small 40ms delay after speechSynthesis.cancel() prevents Safari/Chrome from dropping the first boundary event
+      const startTimer = setTimeout(() => {
+        window.speechSynthesis.speak(utterance);
+      }, 40);
+      activeSpeechTimeouts.push(startTimer);
+    }
+
+    // Load Persona Data into UI
+    function loadPersonaUI() {
+      const p = PERSONAS[currentPersonaKey];
+      studentIdeaText = p.simulatedVoiceIdea;
+
+      document.getElementById('studentAvatar').textContent = p.avatar;
+      document.getElementById('studentNameHeader').textContent = `${p.name}'s Writing Pad`;
+
+      // Step 1
+      renderKaraokeText(
+        'welcomeTextContainer',
+        `Hi ${p.name}! Ready to take a picture of your writing paper?`
+      );
+
+      // Step 2
+      document.getElementById('draft1Drawing').innerHTML = p.drawingSvg;
+      document.getElementById('draft1RawHandwriting').textContent = p.draft1Raw;
+      document.getElementById('drawingCompliment').textContent = p.drawingCompliment;
+      renderKaraokeText('draft1DecodedContainer', p.draft1Decoded);
+
+      // Step 3
+      document.getElementById('activeRubricTag').textContent = p.rubricFocus;
+      renderKaraokeText('coachQuestionContainer', p.coachQuestion);
+      document.getElementById('studentSpokenPreview').textContent = "Tap the green microphone and tell me your idea!";
+
+      // Step 4
+      renderKaraokeText('pencilTimeIdeaContainer', studentIdeaText);
+
+      // Step 5
+      document.getElementById('draft2Drawing').innerHTML = p.drawingSvg;
+      document.getElementById('draft2RawHandwriting').textContent = p.draft2Raw;
+      renderKaraokeText('celebrationTextContainer', p.celebrationText);
+      document.getElementById('finalStoryDecoded').textContent = p.draft2Decoded;
+
+      // Teacher View
+      document.getElementById('teacherDraft1Raw').textContent = `"${p.draft1Raw}"`;
+      document.getElementById('teacherDraft1Decoded').textContent = `"${p.draft1Decoded}"`;
+      document.getElementById('teacherDraft2Raw').textContent = `"${p.draft2Raw}"`;
+      document.getElementById('teacherDraft2Decoded').textContent = `"${p.draft2Decoded}"`;
+      document.getElementById('teacherCoachPrompt').innerHTML = `<strong>Coach:</strong> "${p.coachQuestion}"`;
+      document.getElementById('teacherStudentOral').innerHTML = `<strong>${p.name} (Oral Rehearsal):</strong> "${studentIdeaText}"`;
+      document.getElementById('teacherAiNote').textContent = p.teacherNote;
+
+      const rubricContainer = document.getElementById('teacherRubricRows');
+      rubricContainer.innerHTML = p.rubricScores.map(r => `
+        <div class="flex items-center justify-between p-2.5 rounded-xl border border-slate-100 bg-slate-50">
+          <span class="font-medium text-slate-700">${r.criterion}</span>
+          <span class="px-2.5 py-1 rounded-full text-xs font-bold ${r.color}">${r.status}</span>
+        </div>
+      `).join('');
+    }
+
+    function changePersona(key) {
+      currentPersonaKey = key;
+      loadPersonaUI();
+      goToStep(currentStep);
+    }
+
+    function goToStep(stepNumber) {
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+      clearSpeechTimers();
+      currentStep = stepNumber;
+
+      for (let i = 1; i <= 5; i++) {
+        document.getElementById(`step-${i}`).classList.add('hidden');
+        const dot = document.getElementById(`dot-${i}`);
+        dot.className = i <= stepNumber
+          ? 'w-5 h-5 rounded-full bg-emerald-500 transition-all'
+          : 'w-4 h-4 rounded-full bg-slate-300 transition-all';
+      }
+      document.getElementById(`step-${stepNumber}`).classList.remove('hidden');
+
+      const p = PERSONAS[currentPersonaKey];
+      if (stepNumber === 1) {
+        speakWithHighlight('welcomeTextContainer', `Hi ${p.name}! Ready to take a picture of your writing paper?`);
+      } else if (stepNumber === 2) {
+        speakWithHighlight('draft1DecodedContainer', p.draft1Decoded);
+      } else if (stepNumber === 3) {
+        speakWithHighlight('coachQuestionContainer', p.coachQuestion);
+      } else if (stepNumber === 4) {
+        speakWithHighlight('pencilTimeIdeaContainer', studentIdeaText);
+      } else if (stepNumber === 5) {
+        speakWithHighlight('celebrationTextContainer', p.celebrationText);
+      }
+    }
+
+    function speakWelcome() {
+      const p = PERSONAS[currentPersonaKey];
+      speakWithHighlight('welcomeTextContainer', `Hi ${p.name}! Ready to take a picture of your writing paper?`);
+    }
+
+    function snapDraft1() {
+      goToStep(2);
+    }
+
+    function handleRealPhotoUpload(event, draftNum) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const imgHtml = `<img src="${e.target.result}" class="w-full h-full object-contain" />`;
+        document.getElementById('draft1Drawing').innerHTML = imgHtml;
+        goToStep(2);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function readDraft1Aloud() {
+      speakWithHighlight('draft1DecodedContainer', PERSONAS[currentPersonaKey].draft1Decoded);
+    }
+
+    function speakCoachQuestion() {
+      speakWithHighlight('coachQuestionContainer', PERSONAS[currentPersonaKey].coachQuestion);
+    }
+
+    function fillSimulatedVoiceIdea() {
+      const p = PERSONAS[currentPersonaKey];
+      studentIdeaText = p.simulatedVoiceIdea;
+      document.getElementById(' teacherStudentOral') && (document.getElementById('teacherStudentOral').innerHTML = `<strong>${p.name} (Oral Rehearsal):</strong> "${studentIdeaText}"`);
+      speakWithHighlight('studentSpokenPreview', studentIdeaText);
+    }
+
+    function toggleStudentMic() {
+      const micBtn = document.getElementById('micButton');
+      const micLabel = document.getElementById('micButtonLabel');
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+      if (!SpeechRecognition) {
+        fillSimulatedVoiceIdea();
+        return;
+      }
+
+      if (!isRecording) {
+        recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        isRecording = true;
+        micBtn.classList.add('mic-recording', 'bg-rose-500');
+        micLabel.textContent = "Listening...";
+
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          studentIdeaText = transcript;
+          renderKaraokeText('studentSpokenPreview', studentIdeaText);
+          document.getElementById('teacherStudentOral').innerHTML = `<strong>${PERSONAS[currentPersonaKey].name} (Oral Rehearsal):</strong> "${studentIdeaText}"`;
+          speakWithHighlight('studentSpokenPreview', studentIdeaText);
+        };
+
+        recognition.onend = () => {
+          isRecording = false;
+          micBtn.classList.remove('mic-recording', 'bg-rose-500');
+          micLabel.textContent = "Tap & Speak";
+        };
+
+        recognition.start();
+      } else {
+        recognition.stop();
+      }
+    }
+
+    function toggleKeyboardBox() {
+      const box = document.getElementById('keyboardBox');
+      box.classList.toggle('hidden');
+      if (!box.classList.contains('hidden')) {
+        document.getElementById('studentTypeInput').focus();
+      }
+    }
+
+    function updateFromKeyboard(val) {
+      studentIdeaText = val || PERSONAS[currentPersonaKey].simulatedVoiceIdea;
+      renderKaraokeText('studentSpokenPreview', studentIdeaText);
+    }
+
+    function replayMyIdea() {
+      speakWithHighlight('pencilTimeIdeaContainer', studentIdeaText);
+    }
+
+    function speakCelebration() {
+      speakWithHighlight('celebrationTextContainer', PERSONAS[currentPersonaKey].celebrationText);
+    }
+
+    function toggleTeacherView() {
+      const tv = document.getElementById('teacher-view');
+      tv.classList.toggle('hidden');
+    }
+
+    async function exportSessionReport() {
+      const p = PERSONAS[currentPersonaKey];
+      const reportText = `Wonder Write — Student Growth Report\nStudent: ${p.name}\nDraft 1 (Raw): ${p.draft1Raw}\nOral Rehearsal Idea: ${studentIdeaText}\nDraft 2 (Revised): ${p.draft2Raw}\nTeacher Note: ${p.teacherNote}`;
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: `${p.name} Writing Report`, text: reportText });
+          return;
+        } catch (err) {}
+      }
+      alert("AirDrop / Share Sheet Preview:\n\n" + reportText);
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadPersonaUI();
+    });
+  </script>
+</body>
+</html>

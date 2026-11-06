@@ -16,6 +16,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Early Reader Font: Lexend (Single-story 'a' and 'g' for early readers) -->
   <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Lightweight QR Code Generator for Classroom Rubric Sync -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
   <style>
     * {
@@ -129,19 +131,19 @@
 
   <!-- ================= KID TOP HEADER BAR (NO-PRINT) ================= -->
   <header class="no-print bg-amber-50/95 border-b border-amber-200/80 px-6 py-3 flex items-center justify-between shrink-0">
-    <!-- Active Student Badge (Tap to open 1:1 Student Picker) -->
-    <button onclick="openStudentPickerModal()" class="flex items-center gap-3.5 text-left active:scale-95 transition-transform">
+    <!-- Active Student Profile Badge (Tap to edit own name/avatar) -->
+    <button onclick="openStudentProfileModal()" class="flex items-center gap-3.5 text-left active:scale-95 transition-transform">
       <div id="studentAvatar" class="w-14 h-14 rounded-2xl bg-emerald-100 border-2 border-emerald-400 flex items-center justify-center text-3xl shadow-sm">
         🦁
       </div>
       <div>
         <div class="flex items-center gap-2">
-          <h1 id="studentNameHeader" class="text-2xl font-bold text-slate-800">Select Your Name</h1>
+          <h1 id="studentNameHeader" class="text-2xl font-bold text-slate-800">My Writing Pad</h1>
           <span id="demoModeBadge" class="hidden text-xs font-bold uppercase bg-amber-200 text-amber-950 px-2.5 py-0.5 rounded-full">Sample Demo</span>
         </div>
         <div class="flex items-center gap-1.5 text-xs font-semibold text-emerald-700">
           <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-          <span>Tap here to switch student</span>
+          <span id="rubricSyncedBadge">Tap here to change your name or buddy</span>
         </div>
       </div>
     </button>
@@ -158,7 +160,7 @@
     <!-- Teacher Dashboard Button -->
     <button onclick="toggleTeacherView()" title="Teacher Dashboard" class="h-12 px-4 rounded-2xl bg-slate-200/80 hover:bg-slate-300 active:scale-95 flex items-center gap-2 text-slate-700 font-bold text-sm">
       <span>🔒</span>
-      <span class="hidden sm:inline">Teacher Dashboard</span>
+      <span class="hidden sm:inline">Teacher</span>
     </button>
   </header>
 
@@ -251,7 +253,7 @@
                 Rubric Goal
               </span>
               <button onclick="cycleActiveRubricQuestion()" class="text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-3 py-1.5 rounded-full">
-                🔄 Next Rubric Goal
+                🔄 Next Question
               </button>
             </div>
             <button onclick="speakCoachQuestion()" class="bg-sky-500 hover:bg-sky-600 active:scale-95 text-white px-5 py-2.5 rounded-2xl font-bold flex items-center gap-2 shadow text-lg">
@@ -355,7 +357,7 @@
                 <span class="text-6xl">🌟</span>
                 <div>
                   <h3 class="text-3xl font-bold text-slate-900">Super Writer Star!</h3>
-                  <p class="text-base font-semibold text-emerald-700">Saved to Teacher Portfolio</p>
+                  <p class="text-base font-semibold text-emerald-700">Saved on Your iPad</p>
                 </div>
               </div>
               <button onclick="speakCelebration()" class="bg-sky-500 hover:bg-sky-600 active:scale-95 text-white px-5 py-3 rounded-2xl font-bold flex items-center gap-2 shadow text-xl">
@@ -376,6 +378,10 @@
             <button onclick="finishAndSaveSession()" class="flex-1 min-h-[84px] bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-3xl font-bold text-2xl flex items-center justify-center gap-3 shadow-lg border-b-8 border-emerald-700">
               <span>🎉 Finish & Save</span>
             </button>
+            <button onclick="printOrAirDropVisualPDF(activeStudentId)" class="min-h-[84px] px-7 bg-sky-600 hover:bg-sky-700 active:scale-95 text-white rounded-3xl font-bold text-xl flex items-center gap-2 shadow-lg border-b-8 border-sky-800">
+              <span>📡</span>
+              <span>Share to Teacher</span>
+            </button>
           </div>
         </div>
       </div>
@@ -383,27 +389,90 @@
 
   </main>
 
-  <!-- ================= 1:1 STUDENT ROSTER PICKER MODAL (NO-PRINT) ================= -->
-  <div id="student-picker-modal" class="no-print hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
-    <div class="bg-amber-50 border-4 border-amber-300 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl max-h-[88vh] flex flex-col justify-between">
+  <!-- ================= STUDENT SELF-INPUT PROFILE MODAL (NO-PRINT) ================= -->
+  <div id="student-profile-modal" class="no-print hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+    <div class="bg-amber-50 border-4 border-amber-300 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl flex flex-col justify-between gap-6">
       <div class="flex items-center justify-between border-b border-amber-200 pb-4">
         <div class="flex items-center gap-3">
           <span class="text-4xl">👋</span>
           <div>
-            <h2 class="text-2xl font-bold text-slate-900">Who is writing today?</h2>
-            <p class="text-sm text-slate-600 font-medium">Tap your name card (this iPad will remember you!)</p>
+            <h2 class="text-2xl sm:text-3xl font-bold text-slate-900">Hi Writer! What is your name?</h2>
+            <p class="text-sm text-slate-600 font-medium">Type or speak your name and pick your writing buddy!</p>
           </div>
         </div>
-        <button onclick="closeStudentPickerModal()" class="w-11 h-11 rounded-2xl bg-slate-200 hover:bg-slate-300 font-bold text-slate-700">✕</button>
+        <button onclick="closeStudentProfileModal()" class="w-11 h-11 rounded-2xl bg-slate-200 hover:bg-slate-300 font-bold text-slate-700">✕</button>
       </div>
 
-      <div id="studentPickerGrid" class="grid grid-cols-2 sm:grid-cols-3 gap-4 my-6 overflow-y-auto pr-1">
-        <!-- Populated from Teacher's Classroom Roster -->
+      <!-- Kid Name Input + Voice Input Button -->
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-bold uppercase tracking-wider text-slate-600">1. My Name:</label>
+        <div class="flex items-center gap-3">
+          <input id="kidSelfNameInput" type="text" placeholder="Type your name here..." class="flex-1 p-4 rounded-2xl border-4 border-amber-300 bg-white text-2xl sm:text-3xl font-bold text-slate-900 focus:outline-none focus:border-emerald-500" />
+          <button onclick="dictateStudentName()" id="nameMicBtn" class="min-h-[68px] px-5 bg-sky-500 hover:bg-sky-600 active:scale-95 text-white rounded-2xl font-bold text-lg flex items-center gap-2 shadow border-b-4 border-sky-700">
+            <span class="text-2xl">🎤</span>
+            <span>Say Name</span>
+          </button>
+        </div>
       </div>
 
-      <div class="flex items-center justify-between pt-3 border-t border-amber-200 text-xs text-slate-500">
-        <span>Need to add students? Open 🔒 Teacher Dashboard</span>
-        <button onclick="closeStudentPickerModal(); toggleTeacherView();" class="font-bold text-indigo-700 underline">Edit Class List</button>
+      <!-- Kid Avatar Picker -->
+      <div class="flex flex-col gap-2">
+        <label class="text-sm font-bold uppercase tracking-wider text-slate-600">2. Pick My Writing Buddy:</label>
+        <div id="avatarPickerGrid" class="grid grid-cols-6 gap-3">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <button onclick="saveStudentSelfProfile()" class="w-full min-h-[78px] bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white rounded-3xl font-bold text-2xl flex items-center justify-center gap-3 shadow-xl border-b-8 border-emerald-700">
+        <span>🚀 Let's Start Writing!</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ================= QR CODE / LINK RUBRIC DEPLOYMENT MODAL (NO-PRINT) ================= -->
+  <div id="rubric-deploy-modal" class="no-print hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-6">
+    <div class="bg-white border-2 border-slate-200 rounded-3xl max-w-2xl w-full p-6 sm:p-8 shadow-2xl flex flex-col gap-5">
+      <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 px-2.5 py-0.5 rounded-full">1:1 iPad Classroom Sync</span>
+          <h3 class="text-2xl font-bold text-slate-900 mt-1">Deploy Rubric to All Student iPads</h3>
+        </div>
+        <button onclick="closeRubricDeployModal()" class="w-10 h-10 rounded-xl bg-slate-100 hover:bg-slate-200 font-bold text-slate-700">✕</button>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
+        <!-- QR Code Box -->
+        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 flex flex-col items-center text-center">
+          <div id="rubricQrContainer" class="bg-white p-3 rounded-xl shadow-sm mb-3"></div>
+          <p class="text-xs font-bold text-slate-700">Method 1: Students Scan QR Code</p>
+          <p class="text-[11px] text-slate-500 mt-0.5">Students open their iPad Camera, point it at this screen, and tap the yellow link banner. Their iPad automatically saves your rubric!</p>
+        </div>
+
+        <!-- AirDrop Link & JSON Options -->
+        <div class="flex flex-col gap-3">
+          <div class="p-4 rounded-2xl bg-sky-50 border border-sky-200">
+            <p class="text-xs font-bold text-sky-950 uppercase mb-1">Method 2: AirDrop or Apple Classroom Link</p>
+            <p class="text-xs text-sky-800 mb-3">Share this magic link via AirDrop or Apple Classroom. Opening the link updates the student's rubric immediately.</p>
+            <button onclick="copyOrShareRubricLink()" class="w-full bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow flex items-center justify-center gap-2">
+              <span>📡</span>
+              <span id="copyLinkBtnLabel">Copy / AirDrop Magic Rubric Link</span>
+            </button>
+          </div>
+
+          <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200">
+            <p class="text-xs font-bold text-slate-700 uppercase mb-1">Method 3: Export / Import File</p>
+            <p class="text-xs text-slate-500 mb-3">Download a `.json` rubric file to commit to your GitHub repo or AirDrop.</p>
+            <div class="flex gap-2">
+              <button onclick="downloadRubricJsonFile()" class="flex-1 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs py-2 px-3 rounded-xl">
+                📥 Export .json
+              </button>
+              <label class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-800 font-bold text-xs py-2 px-3 rounded-xl text-center cursor-pointer">
+                📂 Import .json
+                <input type="file" accept=".json" class="hidden" onchange="importRubricJsonFile(event)" />
+              </label>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -416,77 +485,65 @@
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
         <div>
           <span class="text-xs font-bold uppercase tracking-wider bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full">1:1 iPad Classroom Manager & Portfolio</span>
-          <h2 class="text-2xl font-bold text-slate-900 mt-1">Teacher Setup, Rubric & Student Growth Dashboard</h2>
+          <h2 class="text-2xl font-bold text-slate-900 mt-1">Teacher Rubric Builder & Student Growth Dashboard</h2>
         </div>
         <div class="flex flex-wrap items-center gap-3">
-          <button onclick="printOrAirDropVisualPDF()" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-5 py-3 rounded-xl font-bold text-sm flex items-center gap-2 shadow-md">
+          <button onclick="openRubricDeployModal()" class="bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-2 shadow-md">
+            <span>📲</span>
+            <span>Deploy Rubric to 1:1 iPads (QR / Link)</span>
+          </button>
+          <button onclick="printOrAirDropVisualPDF(inspectedSubjectId)" class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white px-4 py-3 rounded-xl font-bold text-sm flex items-center gap-2 shadow-md">
             <span>📄</span>
             <span>Export Visual PDF / AirDrop</span>
           </button>
-          <button onclick="toggleTeacherView()" class="bg-slate-800 hover:bg-slate-900 text-white px-5 py-3 rounded-xl font-bold text-sm">
-            ✕ Back to Student View
+          <button onclick="toggleTeacherView()" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-3 rounded-xl font-bold text-sm">
+            ✕ Student View
           </button>
         </div>
       </div>
 
-      <!-- SECTION A: CLASSROOM ROSTER & SAMPLE SANDBOX -->
-      <div class="grid grid-cols-12 gap-6">
-        <!-- Left: Editable Classroom Name List -->
-        <div class="col-span-12 lg:col-span-6 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+      <!-- SECTION 1: CUSTOM WRITING RUBRIC BUILDER & DEPLOYMENT -->
+      <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
           <div>
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500">1. Classroom Student Roster</h3>
-              <span id="rosterCountBadge" class="text-xs font-bold bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full">0 Students</span>
-            </div>
-            <p class="text-xs text-slate-500 mb-3">Enter one student name per line. Students pick their name on their 1:1 iPad.</p>
-            <textarea id="teacherRosterTextarea" rows="5" placeholder="Oliver&#10;Charlotte&#10;Liam&#10;Amelia" class="w-full p-3.5 rounded-xl border border-slate-300 font-medium text-sm focus:outline-none focus:border-indigo-600"></textarea>
+            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500">1. Custom Writing Rubric & Socratic Coaching Prompts</h3>
+            <p class="text-xs text-slate-500">Edit criteria below, save, and click <strong>"Deploy Rubric to 1:1 iPads"</strong> to push to all student devices via QR Code or AirDrop link.</p>
           </div>
-          <div class="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-slate-100">
-            <span id="rosterSaveFeedback" class="text-xs font-semibold text-emerald-700">Saved locally on iPad</span>
-            <button onclick="saveClassroomRoster()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-xs shadow">
-              💾 Save Class List
+          <div class="flex items-center gap-2">
+            <button onclick="addNewRubricRow()" class="text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-2 rounded-xl border border-indigo-200">
+              + Add Criterion
             </button>
-          </div>
-        </div>
-
-        <!-- Right: Custom Teacher Writing Rubric Builder -->
-        <div class="col-span-12 lg:col-span-6 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between mb-2">
-              <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500">2. Custom Writing Rubric & Coaching Prompts</h3>
-              <button onclick="addNewRubricRow()" class="text-xs font-bold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1 rounded-lg border border-indigo-200">
-                + Add Criterion
-              </button>
-            </div>
-            <p class="text-xs text-slate-500 mb-3">Check active criteria and customize the Socratic question Owl Coach asks students:</p>
-            <div id="teacherRubricBuilderList" class="space-y-2.5 max-h-[190px] overflow-y-auto pr-1">
-              <!-- Populated dynamically -->
-            </div>
-          </div>
-          <div class="flex items-center justify-between gap-3 mt-3 pt-3 border-t border-slate-100">
-            <button onclick="resetDefaultRubric()" class="text-xs font-semibold text-slate-400 hover:text-slate-600">Reset Defaults</button>
             <button onclick="saveCustomRubric()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-xl font-bold text-xs shadow">
               💾 Save Rubric
             </button>
           </div>
         </div>
+
+        <div id="teacherRubricBuilderList" class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[240px] overflow-y-auto pr-1">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-100 text-xs">
+          <span id="rubricSaveFeedback" class="font-semibold text-emerald-700">Active rubric saved on this iPad</span>
+          <button onclick="resetDefaultRubric()" class="font-semibold text-slate-400 hover:text-slate-600">Reset Default Rubric</button>
+        </div>
       </div>
 
-      <!-- SECTION B: STUDENT PORTFOLIO INSPECTOR + SAMPLE STUDENTS -->
+      <!-- SECTION 2: STUDENT PORTFOLIO INSPECTOR + SAMPLE DEMO STUDENTS -->
       <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
         <div class="flex flex-wrap items-center justify-between gap-4 pb-4 mb-5 border-b border-slate-200">
           <div class="flex flex-wrap items-center gap-3">
-            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500">3. Inspect Student Portfolio:</h3>
+            <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500">2. Inspect Student or Sample Portfolio:</h3>
             <select id="teacherPortfolioSelect" onchange="selectPortfolioSubject(this.value)" class="bg-slate-50 border-2 border-slate-300 rounded-xl px-4 py-2 text-slate-900 font-bold text-sm focus:outline-none focus:border-indigo-600">
-              <!-- Optgroups for Classroom Students & Built-in Sample Students -->
+              <!-- Optgroups for Active iPad Student & Pre-Loaded Sample Students -->
             </select>
           </div>
 
           <div class="flex flex-wrap items-center gap-2">
             <button onclick="launchSelectedInStudentView()" class="bg-amber-100 hover:bg-amber-200 text-amber-950 font-bold text-xs px-3.5 py-2.5 rounded-xl border border-amber-300">
-              ▶️ Open Selected in Student View
+              ▶️ Load Selected into Student View
             </button>
-            <button onclick="printOrAirDropVisualPDF()" class="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center gap-1.5">
+            <button onclick="printOrAirDropVisualPDF(inspectedSubjectId)" class="bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow flex items-center gap-1.5">
               <span>📡</span>
               <span>Visual PDF Report (AirDrop / Print)</span>
             </button>
@@ -558,7 +615,6 @@
 
   <!-- ================= PRINTABLE / AIRDROP 1-PAGE VISUAL PDF REPORT ================= -->
   <section id="print-report-sheet" class="hidden p-8 bg-white text-slate-900">
-    <!-- Report Header -->
     <div class="flex items-center justify-between border-b-2 border-slate-800 pb-4 mb-6">
       <div class="flex items-center gap-3">
         <div id="pdfStudentAvatar" class="w-14 h-14 rounded-2xl bg-emerald-100 border-2 border-emerald-500 flex items-center justify-center text-3xl">🦁</div>
@@ -573,7 +629,6 @@
       </div>
     </div>
 
-    <!-- Side-by-Side Draft 1 & Draft 2 Visual Evidence -->
     <div class="grid grid-cols-2 gap-6 mb-6">
       <div class="border-2 border-slate-300 rounded-2xl p-4">
         <div class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">Draft 1 — Initial Writing</div>
@@ -594,14 +649,12 @@
       </div>
     </div>
 
-    <!-- Socratic Coaching & Oral Rehearsal Box -->
     <div class="border-2 border-sky-300 bg-sky-50/40 rounded-2xl p-4 mb-6">
       <div class="text-xs font-bold uppercase tracking-wider text-sky-900 mb-1">Oral Rehearsal & Socratic Coaching Transcript</div>
       <p id="pdfCoachPrompt" class="text-sm text-slate-800 mb-1"></p>
       <p id="pdfStudentOral" class="text-base font-bold text-sky-950"></p>
     </div>
 
-    <!-- Rubric Mastery Table & Instructional Summary -->
     <div class="grid grid-cols-12 gap-6 items-start">
       <div class="col-span-7 border border-slate-300 rounded-2xl p-4">
         <div class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Writing Rubric Assessment</div>
@@ -619,7 +672,6 @@
   <script>
     const AVATAR_POOL = ['🦁', '🐼', '🦖', '🦊', '🐨', '🐸', '🦄', '🐙', '🦋', '🐢', '🦉', '🐯'];
 
-    // Default Teacher Rubric (Saved to localStorage)
     const DEFAULT_RUBRIC = [
       {
         id: 'r1',
@@ -647,10 +699,7 @@
       }
     ];
 
-    // Default Classroom Roster (Teacher can overwrite in dashboard)
-    const DEFAULT_ROSTER = ['Oliver', 'Charlotte', 'Liam', 'Amelia', 'Noah', 'Mia'];
-
-    // 3 Pre-Built Sample Students (Live inside Teacher Dashboard for Demo/Testing)
+    // 3 Pre-Built Sample Students (Live inside Teacher Dashboard)
     const SAMPLE_PERSONAS = {
       'sample:leo': {
         isSample: true,
@@ -743,21 +792,45 @@
       }
     };
 
-    // Persistent State in localStorage
-    let classRoster = JSON.parse(localStorage.getItem('ww_roster')) || DEFAULT_ROSTER;
+    // Persistent Local State
     let customRubric = JSON.parse(localStorage.getItem('ww_rubric')) || DEFAULT_RUBRIC;
     let studentRecords = JSON.parse(localStorage.getItem('ww_records')) || {};
-    let activeStudentId = localStorage.getItem('ww_active_student') || `student:${classRoster[0]}`;
-    let inspectedSubjectId = activeStudentId;
+    let activeStudentId = localStorage.getItem('ww_active_student') || null;
+    let inspectedSubjectId = activeStudentId || 'sample:leo';
+    let selectedAvatarInModal = '🦁';
 
     let currentStep = 1;
     let currentRubricIdx = 0;
     let isRecording = false;
     let recognition = null;
 
-    // Ensure every student in roster has a record object
-    function ensureStudentRecord(studentName, idx = 0) {
-      const id = `student:${studentName}`;
+    // 1. Check URL Parameters on Launch for Teacher-Deployed Rubric (?rubric=...)
+    function checkIncomingRubricFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      const encodedRubric = params.get('rubric');
+      if (encodedRubric) {
+        try {
+          const jsonStr = decodeURIComponent(escape(atob(encodedRubric)));
+          const parsed = JSON.parse(jsonStr);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            customRubric = parsed;
+            localStorage.setItem('ww_rubric', JSON.stringify(customRubric));
+            // Clean URL bar so refreshing doesn't re-trigger
+            window.history.replaceState({}, document.title, window.location.pathname);
+            setTimeout(() => {
+              const badge = document.getElementById('rubricSyncedBadge');
+              if (badge) badge.textContent = "✅ Teacher Rubric Synced to iPad!";
+            }, 300);
+          }
+        } catch (e) {
+          console.error("Failed to parse incoming rubric link:", e);
+        }
+      }
+    }
+
+    function ensureStudentRecord(studentName, avatar = '🦁') {
+      const cleanName = (studentName || 'Writer').trim();
+      const id = `student:${cleanName}`;
       if (!studentRecords[id]) {
         const activeCriteria = customRubric.filter(r => r.active);
         const firstRubric = activeCriteria[0] || DEFAULT_RUBRIC[0];
@@ -766,11 +839,11 @@
 
         studentRecords[id] = {
           isSample: false,
-          name: studentName,
-          avatar: AVATAR_POOL[idx % AVATAR_POOL.length],
+          name: cleanName,
+          avatar: avatar,
           draft1Image: null,
           draft2Image: null,
-          drawingSvg: `<div class="text-slate-400 text-sm font-semibold flex flex-col items-center gap-1"><span class="text-3xl">📷</span><span>Photo of ${studentName}'s Writing</span></div>`,
+          drawingSvg: `<div class="text-slate-400 text-sm font-semibold flex flex-col items-center gap-1"><span class="text-3xl">📷</span><span>Photo of ${cleanName}'s Writing</span></div>`,
           drawingCompliment: "🎨 I love looking at your illustration and handwriting!",
           draft1Raw: "Tap here or snap a photo to read your story.",
           draft1Decoded: "Snap a photo of your writing paper so we can read it together!",
@@ -779,10 +852,12 @@
           oralIdea: "",
           draft2Raw: "Snap your updated paper after Pencil Time!",
           draft2Decoded: "Your revised story will appear here.",
-          celebrationText: `Awesome effort, ${studentName}! You practiced your idea out loud and added it to your paper!`,
+          celebrationText: `Awesome effort, ${cleanName}! You practiced your idea out loud and added it to your paper!`,
           rubricStatuses: defaultStatuses,
-          teacherNote: `${studentName} used oral rehearsal to plan a new detail aligned with the classroom rubric.`
+          teacherNote: `${cleanName} used oral rehearsal to plan a new detail aligned with the classroom rubric.`
         };
+      } else if (avatar) {
+        studentRecords[id].avatar = avatar;
       }
       return studentRecords[id];
     }
@@ -791,16 +866,22 @@
       if (subjectId && subjectId.startsWith('sample:')) {
         return SAMPLE_PERSONAS[subjectId];
       }
-      const name = subjectId ? subjectId.replace('student:', '') : classRoster[0];
-      const idx = Math.max(0, classRoster.indexOf(name));
-      return ensureStudentRecord(name, idx);
+      if (subjectId && studentRecords[subjectId]) {
+        return studentRecords[subjectId];
+      }
+      const existingStudentKeys = Object.keys(studentRecords);
+      if (existingStudentKeys.length > 0) {
+        return studentRecords[existingStudentKeys[0]];
+      }
+      return SAMPLE_PERSONAS['sample:leo'];
     }
 
     function saveAllState() {
-      localStorage.setItem('ww_roster', JSON.stringify(classRoster));
       localStorage.setItem('ww_rubric', JSON.stringify(customRubric));
       localStorage.setItem('ww_records', JSON.stringify(studentRecords));
-      localStorage.setItem('ww_active_student', activeStudentId);
+      if (activeStudentId) {
+        localStorage.setItem('ww_active_student', activeStudentId);
+      }
     }
 
     // ================= SYNCHRONIZED TTS + KARAOKE ENGINE =================
@@ -920,6 +1001,82 @@
       activeSpeechTimeouts.push(startTimer);
     }
 
+    // ================= STUDENT SELF-INPUT MODAL =================
+    function renderAvatarPicker() {
+      const grid = document.getElementById('avatarPickerGrid');
+      grid.innerHTML = AVATAR_POOL.map(av => {
+        const isSelected = av === selectedAvatarInModal;
+        return `
+          <button type="button" onclick="selectModalAvatar('${av}')" class="h-14 rounded-2xl border-4 ${isSelected ? 'border-emerald-500 bg-emerald-100 scale-105' : 'border-amber-200 bg-white'} text-3xl flex items-center justify-center shadow-sm transition-all">
+            ${av}
+          </button>
+        `;
+      }).join('');
+    }
+
+    function selectModalAvatar(av) {
+      selectedAvatarInModal = av;
+      renderAvatarPicker();
+    }
+
+    function openStudentProfileModal() {
+      const rec = activeStudentId ? getSubjectRecord(activeStudentId) : null;
+      const input = document.getElementById('kidSelfNameInput');
+      if (rec && !rec.isSample) {
+        input.value = rec.name;
+        selectedAvatarInModal = rec.avatar;
+      } else {
+        input.value = '';
+        selectedAvatarInModal = '🦁';
+      }
+      renderAvatarPicker();
+      document.getElementById('student-profile-modal').classList.remove('hidden');
+      setTimeout(() => input.focus(), 100);
+    }
+
+    function closeStudentProfileModal() {
+      if (!activeStudentId) {
+        // Default if dismissed without typing
+        ensureStudentRecord('Writer', selectedAvatarInModal);
+        activeStudentId = 'student:Writer';
+        inspectedSubjectId = activeStudentId;
+        saveAllState();
+        loadActiveStudentIntoUI();
+      }
+      document.getElementById('student-profile-modal').classList.add('hidden');
+    }
+
+    function dictateStudentName() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        document.getElementById('kidSelfNameInput').focus();
+        return;
+      }
+      const btn = document.getElementById('nameMicBtn');
+      const rec = new SpeechRecognition();
+      rec.lang = 'en-US';
+      btn.classList.add('bg-rose-500');
+      rec.onresult = (e) => {
+        const spokenName = e.results[0][0].transcript.replace(/[.!?]/g, '').trim();
+        document.getElementById('kidSelfNameInput').value = spokenName;
+      };
+      rec.onend = () => {
+        btn.classList.remove('bg-rose-500');
+      };
+      rec.start();
+    }
+
+    function saveStudentSelfProfile() {
+      const rawName = document.getElementById('kidSelfNameInput').value.trim() || 'Writer';
+      ensureStudentRecord(rawName, selectedAvatarInModal);
+      activeStudentId = `student:${rawName}`;
+      inspectedSubjectId = activeStudentId;
+      saveAllState();
+      loadActiveStudentIntoUI();
+      document.getElementById('student-profile-modal').classList.add('hidden');
+      goToStep(1);
+    }
+
     // ================= STUDENT VIEW UI RENDERING =================
     function loadActiveStudentIntoUI() {
       const rec = getSubjectRecord(activeStudentId);
@@ -951,7 +1108,6 @@
 
       renderKaraokeText('welcomeTextContainer', `Hi ${rec.name.replace(' (Sample)', '')}! Ready to take a picture of your writing paper?`);
 
-      // Step 2
       document.getElementById('draft1VisualBox').innerHTML = rec.draft1Image
         ? `<img src="${rec.draft1Image}" class="w-full h-full object-contain" />`
         : rec.drawingSvg;
@@ -959,7 +1115,6 @@
       document.getElementById('drawingCompliment').textContent = rec.drawingCompliment;
       renderKaraokeText('draft1DecodedContainer', rec.draft1Decoded);
 
-      // Step 3
       document.getElementById('activeRubricTag').textContent = `Rubric Goal: ${rec.rubricFocus}`;
       renderKaraokeText('coachQuestionContainer', rec.coachQuestion);
       if (rec.oralIdea) {
@@ -968,10 +1123,8 @@
         document.getElementById('studentSpokenPreview').textContent = "Tap the green microphone and tell me your idea!";
       }
 
-      // Step 4
       renderKaraokeText('pencilTimeIdeaContainer', rec.oralIdea || "Say your idea in Step 3 so you can replay it here!");
 
-      // Step 5
       document.getElementById('draft2VisualBox').innerHTML = rec.draft2Image
         ? `<img src="${rec.draft2Image}" class="w-full h-full object-contain" />`
         : rec.drawingSvg;
@@ -1098,7 +1251,6 @@
       saveAllState();
     }
 
-    // Native Swift Bridge Receiver
     window.receiveNativeCoaching = function(data) {
       const rec = getSubjectRecord(activeStudentId);
       if (data.rawText) rec.draft1Raw = data.rawText;
@@ -1172,41 +1324,86 @@
       goToStep(1);
     }
 
-    // ================= 1:1 STUDENT ROSTER MODAL =================
-    function openStudentPickerModal() {
-      renderStudentPickerGrid();
-      document.getElementById('student-picker-modal').classList.remove('hidden');
+    // ================= TEACHER RUBRIC DEPLOYMENT (QR + MAGIC LINK + JSON) =================
+    function buildRubricShareUrl() {
+      const jsonStr = JSON.stringify(customRubric);
+      const base64 = btoa(unescape(encodeURIComponent(jsonStr)));
+      const baseUrl = window.location.origin + window.location.pathname;
+      return `${baseUrl}?rubric=${encodeURIComponent(base64)}`;
     }
 
-    function closeStudentPickerModal() {
-      document.getElementById('student-picker-modal').classList.add('hidden');
+    function openRubricDeployModal() {
+      saveCustomRubric();
+      const shareUrl = buildRubricShareUrl();
+      const qrBox = document.getElementById('rubricQrContainer');
+      qrBox.innerHTML = '';
+      if (window.QRCode) {
+        new QRCode(qrBox, {
+          text: shareUrl,
+          width: 170,
+          height: 170,
+          colorDark: "#0f172a",
+          colorLight: "#ffffff"
+        });
+      } else {
+        qrBox.innerHTML = `<p class="text-xs text-slate-500 p-4">Use Copy Link button to share.</p>`;
+      }
+      document.getElementById('rubric-deploy-modal').classList.remove('hidden');
     }
 
-    function renderStudentPickerGrid() {
-      const grid = document.getElementById('studentPickerGrid');
-      grid.innerHTML = classRoster.map((name, idx) => {
-        const id = `student:${name}`;
-        const rec = ensureStudentRecord(name, idx);
-        const isSelected = activeStudentId === id;
-        return `
-          <button onclick="selectActiveClassroomStudent('${id}')" class="p-4 rounded-2xl border-4 ${isSelected ? 'border-emerald-500 bg-emerald-50' : 'border-amber-200 bg-white hover:bg-amber-50/60'} flex items-center gap-3.5 shadow-sm active:scale-95 transition-all text-left">
-            <span class="text-4xl">${rec.avatar}</span>
-            <span class="text-xl font-bold text-slate-800 truncate">${rec.name}</span>
-          </button>
-        `;
-      }).join('');
+    function closeRubricDeployModal() {
+      document.getElementById('rubric-deploy-modal').classList.add('hidden');
     }
 
-    function selectActiveClassroomStudent(studentId) {
-      activeStudentId = studentId;
-      inspectedSubjectId = studentId;
-      saveAllState();
-      loadActiveStudentIntoUI();
-      closeStudentPickerModal();
-      goToStep(1);
+    async function copyOrShareRubricLink() {
+      const shareUrl = buildRubricShareUrl();
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'Wonder Write — Classroom Writing Rubric',
+            text: 'Tap this link to load our classroom writing rubric into Wonder Write:',
+            url: shareUrl
+          });
+          return;
+        } catch (err) {}
+      }
+      navigator.clipboard.writeText(shareUrl);
+      const lbl = document.getElementById('copyLinkBtnLabel');
+      lbl.textContent = "✅ Link Copied to Clipboard!";
+      setTimeout(() => { lbl.textContent = "Copy / AirDrop Magic Rubric Link"; }, 2500);
     }
 
-    // ================= TEACHER DASHBOARD: ROSTER, RUBRIC & PORTFOLIO =================
+    function downloadRubricJsonFile() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(customRubric, null, 2));
+      const a = document.createElement('a');
+      a.setAttribute("href", dataStr);
+      a.setAttribute("download", "wonder-write-rubric.json");
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    }
+
+    function importRubricJsonFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            customRubric = parsed;
+            saveCustomRubric();
+            renderTeacherRubricBuilder();
+            closeRubricDeployModal();
+          }
+        } catch (err) {
+          alert("Invalid rubric JSON file.");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // ================= TEACHER DASHBOARD =================
     function toggleTeacherView() {
       const tv = document.getElementById('teacher-view');
       const isOpening = tv.classList.contains('hidden');
@@ -1222,39 +1419,15 @@
     }
 
     function populateTeacherDashboard() {
-      // 1. Roster Textarea
-      document.getElementById('teacherRosterTextarea').value = classRoster.join('\n');
-      document.getElementById('rosterCountBadge').textContent = `${classRoster.length} Students`;
-
-      // 2. Rubric Builder
       renderTeacherRubricBuilder();
-
-      // 3. Portfolio Selector (Classroom Students + Sample Students)
       populatePortfolioSelector();
       renderPortfolioDetails(inspectedSubjectId);
-    }
-
-    function saveClassroomRoster() {
-      const raw = document.getElementById('teacherRosterTextarea').value;
-      const names = raw.split('\n').map(n => n.trim()).filter(Boolean);
-      if (names.length > 0) {
-        classRoster = names;
-        classRoster.forEach((n, i) => ensureStudentRecord(n, i));
-        if (!activeStudentId.startsWith('sample:') && !classRoster.includes(activeStudentId.replace('student:', ''))) {
-          activeStudentId = `student:${classRoster[0]}`;
-        }
-        saveAllState();
-        populateTeacherDashboard();
-        const fb = document.getElementById('rosterSaveFeedback');
-        fb.textContent = "✅ Roster Updated!";
-        setTimeout(() => { fb.textContent = "Saved locally on iPad"; }, 2000);
-      }
     }
 
     function renderTeacherRubricBuilder() {
       const list = document.getElementById('teacherRubricBuilderList');
       list.innerHTML = customRubric.map((r, idx) => `
-        <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex flex-col gap-1.5">
+        <div class="p-3 rounded-xl border border-slate-200 bg-slate-50 flex flex-col gap-2">
           <div class="flex items-center justify-between gap-2">
             <div class="flex items-center gap-2 flex-1">
               <input type="checkbox" ${r.active ? 'checked' : ''} onchange="customRubric[${idx}].active = this.checked" class="w-4 h-4 accent-indigo-600" />
@@ -1262,7 +1435,7 @@
             </div>
             <button onclick="removeRubricCriterion(${idx})" class="text-slate-400 hover:text-rose-600 text-xs font-bold px-1.5">✕</button>
           </div>
-          <input type="text" value="${r.prompt}" oninput="customRubric[${idx}].prompt = this.value" placeholder="Socratic coaching question Owl Coach will ask..." class="bg-white border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-600 w-full" />
+          <input type="text" value="${r.prompt}" oninput="customRubric[${idx}].prompt = this.value" placeholder="Socratic coaching question Owl Coach will ask..." class="bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-600 w-full" />
         </div>
       `).join('');
     }
@@ -1293,14 +1466,22 @@
       saveAllState();
       renderPortfolioDetails(inspectedSubjectId);
       loadActiveStudentIntoUI();
+      const fb = document.getElementById('rubricSaveFeedback');
+      if (fb) {
+        fb.textContent = "✅ Rubric Saved! Click 'Deploy Rubric to 1:1 iPads' to share.";
+        setTimeout(() => { fb.textContent = "Active rubric saved on this iPad"; }, 3000);
+      }
     }
 
     function populatePortfolioSelector() {
       const sel = document.getElementById('teacherPortfolioSelect');
-      const classroomOptions = classRoster.map(name => {
-        const id = `student:${name}`;
-        return `<option value="${id}" ${inspectedSubjectId === id ? 'selected' : ''}>👧👦 ${name}</option>`;
-      }).join('');
+      const studentKeys = Object.keys(studentRecords);
+      const studentOptions = studentKeys.length
+        ? studentKeys.map(id => {
+            const s = studentRecords[id];
+            return `<option value="${id}" ${inspectedSubjectId === id ? 'selected' : ''}>${s.avatar} ${s.name} (This iPad)</option>`;
+          }).join('')
+        : `<option disabled>No student signed in on this iPad yet</option>`;
 
       const sampleOptions = Object.keys(SAMPLE_PERSONAS).map(sKey => {
         const s = SAMPLE_PERSONAS[sKey];
@@ -1308,8 +1489,8 @@
       }).join('');
 
       sel.innerHTML = `
-        <optgroup label="My Classroom Roster">
-          ${classroomOptions}
+        <optgroup label="Students on This 1:1 iPad">
+          ${studentOptions}
         </optgroup>
         <optgroup label="Pre-Loaded Demo Sample Students">
           ${sampleOptions}
@@ -1389,7 +1570,7 @@
 
     // ================= VISUAL PDF EXPORT & AIRDROP =================
     function populatePrintableSheet(subjectId) {
-      const rec = getSubjectRecord(subjectId);
+      const rec = getSubjectRecord(subjectId || activeStudentId);
       document.getElementById('pdfStudentAvatar').textContent = rec.avatar;
       document.getElementById('pdfStudentName').textContent = `${rec.name.replace(' (Sample)', '')} — Writing Growth Report`;
       document.getElementById('pdfDateText').textContent = new Date().toLocaleDateString('en-US', {
@@ -1424,15 +1605,20 @@
       }).join('');
     }
 
-    function printOrAirDropVisualPDF() {
-      populatePrintableSheet(inspectedSubjectId);
+    function printOrAirDropVisualPDF(targetId) {
+      populatePrintableSheet(targetId || inspectedSubjectId);
       window.print();
     }
 
     // Initialize on load
     window.addEventListener('DOMContentLoaded', () => {
-      classRoster.forEach((n, i) => ensureStudentRecord(n, i));
-      loadActiveStudentIntoUI();
+      checkIncomingRubricFromURL();
+      if (!activeStudentId) {
+        // First time on this 1:1 iPad -> prompt student to enter their own name & pick buddy
+        openStudentProfileModal();
+      } else {
+        loadActiveStudentIntoUI();
+      }
     });
   </script>
 </body>
